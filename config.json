@@ -1,0 +1,11 @@
+{
+    "OriginalDataset": "/datasets/letter.data",
+    "MissingnessMechanism": "MCAR",
+    "MissingRate": 30,
+    "ApproachA": "/approaches/GAIN.py",
+    "ApproachB": "/approaches/HI-VAE.py",
+    "Mode": "eval",
+    "DownstreamTask": "/performance_eval/dnn_classifier.py",
+    "DownstreamMetrics": ["Accuracy"],
+    "ImputationMetrics": ["NRMSE", "AccuracyError"]
+}
