@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(0, '/approaches')
+sys.path.insert(0, '/miss_generator')
+sys.path.insert(0, '/performance_eval')
 import missing_generator
 import reconstruct
 import performance_eval
