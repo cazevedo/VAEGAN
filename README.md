@@ -9,5 +9,5 @@ VAEGAN: a framework to evaluate deep generative models for missing data imputati
 sudo apt install python3 pip3 virtualenv
 virtualenv --system-site-packages -p python3 ./venv
 source ./venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements.txt --upgrade
 ```
