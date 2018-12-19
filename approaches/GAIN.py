@@ -59,6 +59,8 @@ def plot(samples):
         return fig
 
 def train(dataset, mask):
+    tf.reset_default_graph()
+
     # %% System Parameters
     # 1. Mini batch size
     mb_size = 128
@@ -158,7 +160,7 @@ def train(dataset, mask):
     if not os.path.exists('Multiple_Impute_out1/'):
         os.makedirs('Multiple_Impute_out1/')
 
-    for k in tqdm(range(epochs)):
+    for k in range(epochs):
         # %% Start Iterations
         for it in tqdm(range(datasetLen)):
             # %% Inputs
@@ -196,6 +198,8 @@ def train(dataset, mask):
     sess.close()
 
 def eval(dataset, mask):
+    tf.reset_default_graph()
+
     # %% System Parameters
     (datasetLen, Dim) = np.shape(dataset)
 
@@ -299,5 +303,7 @@ def eval(dataset, mask):
 
             reconstructed_dataset[it] = sess.run(G_sample, feed_dict={X: X_mb, M: M_mb, Z: X_mb})
             reconstructed_dataset[it] = M_mb * X_mb + (1 - M_mb) * reconstructed_dataset[it]
+
+    sess.close()
 
     return reconstructed_dataset
