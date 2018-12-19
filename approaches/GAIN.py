@@ -1,11 +1,11 @@
 '''
-Written by Jinsung Yoon
-Date: Jul 9th 2018 (Revised Oct 19th 2018)
+From the code written by Jinsung Yoon (jsyoon0823@g.ucla.edu)
+Date: Dec 19th 2018
 Generative Adversarial Imputation Networks (GAIN) Implementation on MNIST
 Reference: J. Yoon, J. Jordon, M. van der Schaar, "GAIN: Missing Data Imputation using Generative Adversarial Nets," ICML, 2018.
 Paper Link: http://medianetlab.ee.ucla.edu/papers/ICML_GAIN.pdf
 Appendix Link: http://medianetlab.ee.ucla.edu/papers/ICML_GAIN_Supp.pdf
-Contact: jsyoon0823@g.ucla.edu
+GitHub Repo: https://github.com/jsyoon0823/GAIN
 '''
 
 # %% Packages
@@ -69,7 +69,7 @@ def train(dataset, mask):
     # 6. No
     (datasetLen, Dim) = np.shape(dataset)
     # 7. Number of epochs
-    epochs = 10
+    epochs = 1
 
     trainX = dataset
     trainM = mask
@@ -109,17 +109,15 @@ def train(dataset, mask):
     theta_G = [G_W1, G_W2, G_W3, G_b1, G_b2, G_b3]
 
     # %% GAIN Function
-
     # %% 1. Generator
     def generator(x, z, m):
-        inp = m * x + (1 - m) * z  # Fill in random noise on the missing values
-        inputs = tf.concat(axis=1, values=[inp, m])  # Mask + Data Concatenate
+        # inp = m * x + (1 - m) * z  # Fill in random noise on the missing values
+        inputs = tf.concat(axis=1, values=[z, m])  # Mask + Data Concatenate
         G_h1 = tf.nn.relu(tf.matmul(inputs, G_W1) + G_b1)
         G_h2 = tf.nn.relu(tf.matmul(G_h1, G_W2) + G_b2)
         G_prob = tf.nn.sigmoid(tf.matmul(G_h2, G_W3) + G_b3)  # [0,1] normalized Output
 
         return G_prob
-
 
     # %% 2. Discriminator
     def discriminator(x, m, g, h):
@@ -166,17 +164,24 @@ def train(dataset, mask):
             # %% Inputs
             mb_idx = sample_idx(datasetLen, mb_size)
             X_mb = trainX[mb_idx, :]
-            Z_mb = sample_Z(mb_size, Dim)
+            # Z_mb = sample_Z(mb_size, Dim)
             M_mb = trainM[mb_idx, :]
             H_mb1 = sample_M(mb_size, Dim, 1 - p_hint)
             H_mb = M_mb * H_mb1
 
-            New_X_mb = M_mb * X_mb + (1 - M_mb) * Z_mb  # Missing Data Introduce
+            # New_X_mb = M_mb * X_mb + (1 - M_mb) * Z_mb  # Missing Data Introduce
 
-            _, D_loss_curr = sess.run([D_solver, D_loss1], feed_dict={X: New_X_mb, M: M_mb, Z: New_X_mb, H: H_mb})
+            _, D_loss_curr = sess.run([D_solver, D_loss1], feed_dict={X: X_mb, M: M_mb, Z: X_mb, H: H_mb})
             _, G_loss_curr, MSE_train_loss_curr, MSE_test_loss_curr = sess.run(
                 [G_solver, G_loss1, MSE_train_loss, MSE_test_loss],
-                feed_dict={X: New_X_mb, M: M_mb, Z: New_X_mb, H: H_mb})
+                feed_dict={X: X_mb, M: M_mb, Z: X_mb, H: H_mb})
+
+            # %% Intermediate Losses
+            if it % 100 == 0:
+                print('Iter: {}'.format(it))
+                print('Train_loss: {:.4}'.format(MSE_train_loss_curr))
+                print('Test_loss: {:.4}'.format(MSE_test_loss_curr))
+                print()
 
     # Add ops to save and restore all the variables.
     saver = tf.train.Saver()
@@ -190,31 +195,38 @@ def train(dataset, mask):
     print("Model saved in path: %s" % save_path)
     sess.close()
 
-def eval(inc_dataset, mask):
+def eval(dataset, mask):
     # %% System Parameters
-    (datasetLen, Dim) = np.shape(orig_dataset)
+    (datasetLen, Dim) = np.shape(dataset)
 
     reconstructed_dataset = np.zeros((datasetLen, Dim))
 
-    # X
-    testX = orig_dataset
+    testX = dataset
     testM = mask
 
-    '''
-    GAIN Consists of 3 Components
-    - Generator
-    - Discriminator
-    - Hint Mechanism
-    '''
+    alpha = 10
 
-    # %% GAIN Architecture
     # %% 1. Input Placeholders
     # 1.1. Data Vector
     X = tf.placeholder(tf.float32, shape=[None, Dim])
     # 1.2. Mask Vector
     M = tf.placeholder(tf.float32, shape=[None, Dim])
+    # 1.3. Hint vector
+    H = tf.placeholder(tf.float32, shape=[None, Dim])
     # 1.4. Random Noise Vector
     Z = tf.placeholder(tf.float32, shape=[None, Dim])
+
+    # %% 2. Discriminator
+    D_W1 = tf.Variable(xavier_init([Dim * 2, 256]))  # Data + Hint as inputs
+    D_b1 = tf.Variable(tf.zeros(shape=[256]))
+
+    D_W2 = tf.Variable(xavier_init([256, 128]))
+    D_b2 = tf.Variable(tf.zeros(shape=[128]))
+
+    D_W3 = tf.Variable(xavier_init([128, Dim]))
+    D_b3 = tf.Variable(tf.zeros(shape=[Dim]))  # Output is multi-variate
+
+    theta_D = [D_W1, D_W2, D_W3, D_b1, D_b2, D_b3]
 
     # %% 3. Generator
     G_W1 = tf.Variable(xavier_init([Dim * 2, 256]))  # Data + Mask as inputs (Random Noises are in Missing Components)
@@ -226,19 +238,48 @@ def eval(inc_dataset, mask):
     G_W3 = tf.Variable(xavier_init([128, Dim]))
     G_b3 = tf.Variable(tf.zeros(shape=[Dim]))
 
+    theta_G = [G_W1, G_W2, G_W3, G_b1, G_b2, G_b3]
+
     # %% GAIN Function
     # %% Generator
     def generator(x, z, m):
-        inp = m * x + (1 - m) * z  # Fill in random noise on the missing values
-        inputs = tf.concat(axis=1, values=[inp, m])  # Mask + Data Concatenate
+        # inp = m * x + (1 - m) * z  # Fill in random noise on the missing values
+        inputs = tf.concat(axis=1, values=[z, m])  # Mask + Data Concatenate
         G_h1 = tf.nn.relu(tf.matmul(inputs, G_W1) + G_b1)
         G_h2 = tf.nn.relu(tf.matmul(G_h1, G_W2) + G_b2)
         G_prob = tf.nn.sigmoid(tf.matmul(G_h2, G_W3) + G_b3)  # [0,1] normalized Output
 
         return G_prob
 
+    # %% 2. Discriminator
+    def discriminator(x, m, g, h):
+        inp = m * x + (1 - m) * g  # Replace missing values to the imputed values
+        inputs = tf.concat(axis=1, values=[inp, h])  # Hint + Data Concatenate
+        D_h1 = tf.nn.relu(tf.matmul(inputs, D_W1) + D_b1)
+        D_h2 = tf.nn.relu(tf.matmul(D_h1, D_W2) + D_b2)
+        D_logit = tf.matmul(D_h2, D_W3) + D_b3
+        D_prob = tf.nn.sigmoid(D_logit)  # [0,1] Probability Output
+
+        return D_prob
+
     # %% Structure
     G_sample = generator(X, Z, M)
+    D_prob = discriminator(X, M, G_sample, H)
+
+    # %% Loss
+    D_loss1 = -tf.reduce_mean(M * tf.log(D_prob + 1e-8) + (1 - M) * tf.log(1. - D_prob + 1e-8)) * 2
+    G_loss1 = -tf.reduce_mean((1 - M) * tf.log(D_prob + 1e-8)) / tf.reduce_mean(1 - M)
+    MSE_train_loss = tf.reduce_mean((M * X - M * G_sample) ** 2) / tf.reduce_mean(M)
+
+    D_loss = D_loss1
+    G_loss = G_loss1 + alpha * MSE_train_loss
+
+    # %% MSE Performance metric
+    MSE_test_loss = tf.reduce_mean(((1 - M) * X - (1 - M) * G_sample) ** 2) / tf.reduce_mean(1 - M)
+
+    # %% Solver
+    D_solver = tf.train.AdamOptimizer().minimize(D_loss, var_list=theta_D)
+    G_solver = tf.train.AdamOptimizer().minimize(G_loss, var_list=theta_G)
 
     saver = tf.train.Saver()
 
@@ -255,21 +296,8 @@ def eval(inc_dataset, mask):
             mb_idx = [it]
             X_mb = testX[mb_idx, :]
             M_mb = testM[mb_idx, :]
-            Z_mb = sample_Z(1, Dim)
 
-            New_X_mb = M_mb * X_mb + (1 - M_mb) * Z_mb
-
-            reconstructed_dataset[it] = sess.run(G_sample, feed_dict={X: X_mb, M: M_mb, Z: New_X_mb})
-
-    # a = reconstructed_dataset[0].reshape(28, 28)
-    # print(np.shape(a))
-    # print(a)
-    # fig = plot(reconstructed_dataset[0].reshape(28,28))
-    # plt.savefig('Multiple_Impute_out1/{}.png'.format(str(200).zfill(3)), bbox_inches='tight')
-    # plt.close(fig)
-    # fig = plot(reconstructed_dataset[1])
-    # plt.savefig('Multiple_Impute_out1/{}.png'.format(str(201).zfill(3)), bbox_inches='tight')
-    # plt.close(fig)
-
+            reconstructed_dataset[it] = sess.run(G_sample, feed_dict={X: X_mb, M: M_mb, Z: X_mb})
+            reconstructed_dataset[it] = M_mb * X_mb + (1 - M_mb) * reconstructed_dataset[it]
 
     return reconstructed_dataset
