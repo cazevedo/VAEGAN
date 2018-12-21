@@ -7,7 +7,7 @@
     "Approach1Mode": "reconstruct",
     "Approach2": "/home/cazevedo/deeplearning/VAEGAN/approaches/HI-VAE.py",
     "Approach2Mode": "train",
-    "BaselineMethods": ["MICE", "MeanImputation", "MostFrequent"],
+    "BaselineMethods": ["MostFrequent", "MeanImputation", "MICE"],
     "DownstreamTask": "/performance_eval/dnn_classifier.py",
     "DownstreamMetrics": ["Accuracy"],
     "ImputationMetrics": ["NRMSE", "AccuracyError"]

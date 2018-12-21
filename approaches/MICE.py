@@ -4,6 +4,7 @@ import pandas as pd
 from fancyimpute import IterativeImputer
 
 def reconstruct(dataset, mask):
+    print('Reconstructing using MICE...')
     incomplete_dataset = np.zeros(np.shape(dataset))
 
     # IterativeImputer requires corrupted entries to be identified as NaN
@@ -16,7 +17,6 @@ def reconstruct(dataset, mask):
         incomplete_dataset[i] = frame.values*ms.values
 
     incomplete_dataset = pd.DataFrame(incomplete_dataset)
-    print(np.shape(incomplete_dataset))
 
     n_imputations = 5
     reconstructed_dataset = []
