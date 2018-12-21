@@ -1,5 +1,5 @@
 '''
-From the code written by Jinsung Yoon (jsyoon0823@g.ucla.edu)
+Adapted from the code written by Jinsung Yoon (jsyoon0823@g.ucla.edu)
 Date: Dec 19th 2018
 Generative Adversarial Imputation Networks (GAIN) Implementation on MNIST
 Reference: J. Yoon, J. Jordon, M. van der Schaar, "GAIN: Missing Data Imputation using Generative Adversarial Nets," ICML, 2018.
@@ -7,15 +7,18 @@ Paper Link: http://medianetlab.ee.ucla.edu/papers/ICML_GAIN.pdf
 Appendix Link: http://medianetlab.ee.ucla.edu/papers/ICML_GAIN_Supp.pdf
 GitHub Repo: https://github.com/jsyoon0823/GAIN
 '''
+# TODO: adapt GAIN to be able to reconstruct tabular datasets
 
 # %% Packages
 import tensorflow as tf
-from tensorflow.examples.tutorials.mnist import input_data
+# from tensorflow.examples.tutorials.mnist import input_data
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
+# import matplotlib.pyplot as plt
+# import matplotlib.gridspec as gridspec
 import os
 from tqdm import tqdm
+import pandas as pd
+
 
 filename = 'model.ckpt'
 
@@ -42,23 +45,25 @@ def xavier_init(size):
     xavier_stddev = 1. / tf.sqrt(in_dim / 2.)
     return tf.random_normal(shape=size, stddev=xavier_stddev)
 
-# 2. Plot (4 x 4 subfigures)
-def plot(samples):
-    fig = plt.figure(figsize=(5, 5))
-    gs = gridspec.GridSpec(5, 5)
-    gs.update(wspace=0.05, hspace=0.05)
-
-    for i, sample in enumerate(samples):
-        ax = plt.subplot(gs[i])
-        plt.axis('off')
-        ax.set_xticklabels([])
-        ax.set_yticklabels([])
-        ax.set_aspect('equal')
-        plt.imshow(sample.reshape(28, 28), cmap='Greys_r')
-
-        return fig
+# # 2. Plot (4 x 4 subfigures)
+# def plot(samples):
+#     fig = plt.figure(figsize=(5, 5))
+#     gs = gridspec.GridSpec(5, 5)
+#     gs.update(wspace=0.05, hspace=0.05)
+#
+#     for i, sample in enumerate(samples):
+#         ax = plt.subplot(gs[i])
+#         plt.axis('off')
+#         ax.set_xticklabels([])
+#         ax.set_yticklabels([])
+#         ax.set_aspect('equal')
+#         plt.imshow(sample.reshape(28, 28), cmap='Greys_r')
+#
+#         return fig
 
 def train(dataset, mask):
+    print('Training GAIN...')
+
     tf.reset_default_graph()
 
     # %% System Parameters
@@ -73,8 +78,8 @@ def train(dataset, mask):
     # 7. Number of epochs
     epochs = 1
 
-    trainX = dataset
-    trainM = mask
+    trainX = dataset.copy()
+    trainM = mask.copy()
 
     # %% 1. Input Placeholders
     # 1.1. Data Vector
@@ -165,9 +170,9 @@ def train(dataset, mask):
         for it in tqdm(range(datasetLen)):
             # %% Inputs
             mb_idx = sample_idx(datasetLen, mb_size)
-            X_mb = trainX[mb_idx, :]
+            X_mb = trainX.loc[mb_idx, :].values
             # Z_mb = sample_Z(mb_size, Dim)
-            M_mb = trainM[mb_idx, :]
+            M_mb = trainM.loc[mb_idx, :].values
             H_mb1 = sample_M(mb_size, Dim, 1 - p_hint)
             H_mb = M_mb * H_mb1
 
@@ -197,7 +202,9 @@ def train(dataset, mask):
     print("Model saved in path: %s" % save_path)
     sess.close()
 
-def eval(dataset, mask):
+def reconstruct(dataset, mask):
+    print('Reconstructing using GAIN...')
+
     tf.reset_default_graph()
 
     # %% System Parameters
@@ -205,8 +212,8 @@ def eval(dataset, mask):
 
     reconstructed_dataset = np.zeros((datasetLen, Dim))
 
-    testX = dataset
-    testM = mask
+    testX = dataset.copy()
+    testM = mask.copy()
 
     alpha = 10
 
@@ -298,12 +305,12 @@ def eval(dataset, mask):
 
         for it in tqdm(range(datasetLen)):
             mb_idx = [it]
-            X_mb = testX[mb_idx, :]
-            M_mb = testM[mb_idx, :]
+            X_mb = testX.loc[mb_idx, :].values
+            M_mb = testM.loc[mb_idx, :].values
 
             reconstructed_dataset[it] = sess.run(G_sample, feed_dict={X: X_mb, M: M_mb, Z: X_mb})
             reconstructed_dataset[it] = M_mb * X_mb + (1 - M_mb) * reconstructed_dataset[it]
 
     sess.close()
 
-    return reconstructed_dataset
+    return pd.DataFrame(reconstructed_dataset)
