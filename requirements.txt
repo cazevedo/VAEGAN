@@ -3,3 +3,4 @@ tqdm
 matplotlib
 numpy
 sklearn
+fancyimpute
