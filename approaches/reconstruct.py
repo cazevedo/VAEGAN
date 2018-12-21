@@ -8,6 +8,8 @@ from tqdm import tqdm
 from tensorflow.examples.tutorials.mnist import input_data
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+import sys
+import pandas as pd
 
 def plot(samples):
     fig = plt.figure(figsize=(5, 5))
@@ -21,6 +23,7 @@ def plot(samples):
         ax.set_yticklabels([])
         ax.set_aspect('equal')
         plt.imshow(sample.reshape(28, 28), cmap='Greys_r')
+        # plt.imshow(sample, cmap='Greys_r')
 
     return fig
 
@@ -35,7 +38,8 @@ def get_dataset(mode, n_samples):
         mask = np.ones(np.shape(original_dataset))
         mask = mask.reshape((np.shape(original_dataset)[0], 28, 28))
 
-        missing_rows = [3, 12, 18, 22, 23]
+        missing_rows = [3, 22]
+        # missing_rows = [3, 12, 18, 22, 23]
         for i in range(np.shape(original_dataset)[0]):
             mask[i][missing_rows, :] = mask[i][missing_rows, :] * 0
         return mask.reshape((np.shape(original_dataset)[0], 28*28))
@@ -64,6 +68,10 @@ def get_dataset(mode, n_samples):
         Z_mb = sample_Z(1, Dim)
         incomplete_dataset[it] = M_mb * X_mb + (1 - M_mb) * Z_mb
 
+    original_dataset = pd.DataFrame(original_dataset)
+    incomplete_dataset = pd.DataFrame(incomplete_dataset)
+    mask = pd.DataFrame(mask)
+
     return  original_dataset, incomplete_dataset, mask
 ### ---------------------  -----------------------###
 ### ---------------------  -----------------------###
@@ -72,15 +80,27 @@ class ReconstructDataset(object):
     def __init__(self):
         # Load json config file (should be in the root dir of the project)
         script_dir = os.path.abspath(__file__)
-        (filedir, tail) = os.path.split(script_dir)
-        (projectdir, tail) = os.path.split(filedir)
+        (self.filedir, tail) = os.path.split(script_dir)
+        (projectdir, tail) = os.path.split(self.filedir)
         filename = 'config.json'
         abs_file_path = os.path.join(projectdir, filename)
 
         with open(abs_file_path) as f:
             self.config = json.load(f)
 
+        script_dir = os.path.abspath(__file__)
+        (filedir, tail) = os.path.split(script_dir)
+        (projectdir, tail) = os.path.split(filedir)
+        dir_name = 'datasets'
+        self.datasets_dir_path = os.path.join(projectdir, dir_name)
+
     def run(self):
+        # TODO change this for Francisco's implementation
+        original_dataset, incomplete_dataset, mask = get_dataset(mode='MNAR', n_samples=100)
+
+        r_datasets_paths = []
+
+        # Reconstruct the dataset for each approach
         n_approaches = self.config.get("NumberOfApproaches")
         for i in range(n_approaches):
             # get the path of the approach to be compared
@@ -92,28 +112,49 @@ class ReconstructDataset(object):
             # execution mode
             mode = self.config.get("Approach"+str(i+1)+"Mode")
 
-            # TODO get the dataset from pandas dataframe and make each approach compliant
-            original_dataset, incomplete_dataset, mask = get_dataset(mode='MNAR', n_samples=1000)
-
             if mode == 'train':
                 appch.train(incomplete_dataset, mask)
-                reconstructed_dataset = appch.eval(incomplete_dataset, mask)
-            elif mode == 'eval':
-                reconstructed_dataset = appch.eval(incomplete_dataset, mask)
+                reconstructed_dataset = appch.reconstruct(incomplete_dataset, mask)
+            elif mode == 'reconstruct':
+                reconstructed_dataset = appch.reconstruct(incomplete_dataset, mask)
 
-            for i in tqdm(range(len(reconstructed_dataset))):
-                if i % 100 == 0:
-                    inc = incomplete_dataset[i]
-                    rec = reconstructed_dataset[i]
-                    orig = original_dataset[i]
+            # save the reconstructed dataset in datasets folder
+            file_name = self.datasets_dir_path+"/Approach"+str(i+1)+"_rd"
+            reconstructed_dataset.to_pickle(file_name)
+            r_datasets_paths.append(file_name)
 
-                    samples = np.vstack([inc, rec, orig])
-                    fig = plot(samples)
-                    plt.savefig('Multiple_Impute_out1/{}.png'.format(str(i).zfill(3)), bbox_inches='tight')
-                    plt.close(fig)
+            # for i in tqdm(range(len(reconstructed_dataset))):
+            #     if i % 100 == 0:
+            #         inc = incomplete_dataset[i]
+            #         rec = reconstructed_dataset[i]
+            #         orig = original_dataset[i]
+            #
+            #         samples = np.vstack([inc, rec, orig])
+            #         fig = plot(samples)
+            #         plt.savefig('Multiple_Impute_out1/{}.png'.format(str(i).zfill(3)), bbox_inches='tight')
+            #         plt.close(fig)
 
-            return reconstructed_dataset
+        # sys.exit(0)
+
+        # Reconstruct the dataset for each baseline method
+        baseline = self.config.get("BaselineMethods")
+        for method in baseline:
+            method_path = self.filedir+'/'+method+'.py'
+            print(method_path)
+            spec = importlib.util.spec_from_file_location("method", method_path)
+            mthd = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mthd)
+
+            reconstructed_dataset = mthd.reconstruct(incomplete_dataset, mask)
+
+            # save the reconstructed dataset in datasets folder
+            file_name = self.datasets_dir_path+'/'+method+'_rd'
+            reconstructed_dataset.to_pickle(file_name)
+            r_datasets_paths.append(file_name)
+
+        return r_datasets_paths
 
 if __name__ == "__main__":
     reconstruct_obj = ReconstructDataset()
-    reconstruct_obj.run()
+    r_datasets_paths = reconstruct_obj.run()
+    print(r_datasets_paths)

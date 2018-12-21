@@ -4,9 +4,10 @@
     "MissingRate": 30,
     "NumberOfApproaches": 1,
     "Approach1": "/home/cazevedo/deeplearning/VAEGAN/approaches/GAIN.py",
-    "Approach1Mode": "train",
+    "Approach1Mode": "reconstruct",
     "Approach2": "/home/cazevedo/deeplearning/VAEGAN/approaches/HI-VAE.py",
-    "Approach2Mode": "eval",
+    "Approach2Mode": "train",
+    "BaselineMethods": ["MICE", "MeanImputation", "MostFrequent"],
     "DownstreamTask": "/performance_eval/dnn_classifier.py",
     "DownstreamMetrics": ["Accuracy"],
     "ImputationMetrics": ["NRMSE", "AccuracyError"]
