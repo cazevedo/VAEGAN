@@ -33,5 +33,7 @@ start_time = time.time()
 pd_ds=pd.DataFrame(np.array([np.asarray(i).flatten() for i in ds_mnist.train_data[:]]),dtype=np.uint8)
 print(time.time() - start_time) ## ~ 0,7 seconds in my machine
 
-## Pandas didn't quite do a good work getting data from a NumPy array generator.
-## Does an equivalent job when it gets data from a np.array
+
+### CONCLUSIONS
+## Pandas didn't do a good job getting data from a NumPy array generator.
+## Does an equivalent job when it gets data from a unique np.array built from the same generator.
