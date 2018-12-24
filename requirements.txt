@@ -4,3 +4,5 @@ matplotlib
 numpy
 sklearn
 fancyimpute
+pandas
+xlrd

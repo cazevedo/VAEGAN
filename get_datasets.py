@@ -6,30 +6,30 @@ import random
 
 class dataset_folder():
     def __init__(self,dataset,miss_strats,miss_rates,n,target=None,train_ratio=0.9):
-        self.config_file=self.config(miss_strats,miss_rates,n)
-        self.orig_ds=self.ds_loader(dataset,target)
+        self.config=self.config(miss_strats,miss_rates,n)
+        self.orig_ds=self.ds_loader(dataset,target,train_ratio)
         self.miss_masks=self.make_miss_masks()
-    
+
     #Creates config file with list of miss_strats and miss_rates of size n
     def config(self,miss_strats,miss_rates,n):
         miss_strats,miss_rates=self.verify_inputs(miss_strats,miss_rates,n)
         #miss_strats and miss_rates are now a lists of size n
-        config_file={
+        config={
                 'miss_strats':miss_strats,
                 'miss_rates':miss_rates
                 }
-        return config_file
+        return config
 
     #Verifies all configuration inputs
     def verify_inputs(self,miss_strats,miss_rates,n):
         ### List of accepted strats
         accepted_strats=['MCAR','MNAR']
-        
+
         ## Verifying inputs
         ### Verify n
         if type(n)!=int:
             raise TypeError("The argument number of imputation tests 'n' must be an integer")
-        
+
         ### Verify miss_strats
         if type(miss_strats)==list:
             if len(miss_strats)==n:
@@ -54,7 +54,7 @@ class dataset_folder():
             miss_strats=[miss_strats]*n
         else:
             raise TypeError("The [miss_strats] argument must be a string or a list of elements contained in {}".format(accepted_strats))
-        
+
         ### Verify miss_rates
         if type(miss_rates)==list:
             if len(miss_rates)==n:
@@ -83,14 +83,14 @@ class dataset_folder():
             miss_rates=[miss_rates]*n
         else:
             raise TypeError("The [miss_rates] argument must be a float or a list of elements contained in ]0,1[")
-    
+
         return miss_strats,miss_rates
-    
+
     #Devolve orig_ds, um dicionário com todos os dataframes correspondentes
-    def ds_loader(self,dataset,target):
+    def ds_loader(self,dataset,target,train_ratio):
         supported_datasets={
                 #'MNIST':load_MNIST(),
-                'credit':self.load_credit()
+                'credit':self.load_credit(train_ratio)
                 }
 
         if type(dataset)==pd.core.frame.DataFrame:
@@ -99,7 +99,7 @@ class dataset_folder():
         if type(dataset)==str:
             if dataset in supported_datasets:
                 train_X,test_X,dtypes,train_target,test_target=supported_datasets[dataset]
-                
+
         orig_ds={
                 'train_X':train_X,
                 'test_X':test_X,
@@ -108,18 +108,17 @@ class dataset_folder():
                 'test_target':test_target
                 }
         return orig_ds
-    
+
     ##
     def load_MNIST():
-        
         return
-    
-    def load_credit(self):
+
+    def load_credit(self, train_ratio):
         #Import the dataset from excel
-        raw=pd.read_excel('/datasets/default of credit card clients.xls',
+        raw=pd.read_excel('datasets/default of credit card clients.xls',
                           index_col='ID',
                           dtype='int64')
-        
+
         ###Column type mapping
         #ordinal: belong to an ordered finite set -> uint8
         #categorical: belong to an unordered finite set -> category
@@ -135,8 +134,8 @@ class dataset_folder():
         #Format dtypes
         raw[variables['ordinal_vars']]=raw[variables['ordinal_vars']].astype(np.uint8)
         raw[variables['categorical_vars']]=raw[variables['categorical_vars']].astype('category')
-        raw[variables['real_vars']]=raw[variables['categorical_vars']].astype('int64')
-        
+        raw[variables['real_vars']]=raw[variables['real_vars']].astype('int64')
+
         #Split dataset - create indices
         test_index=random.sample(range(len(raw)),int(len(raw)*(1-train_ratio)))
         test_index.sort()
@@ -146,40 +145,34 @@ class dataset_folder():
         test_X=raw.loc[test_index, raw.columns != variables['target_var']]
         train_target=raw.loc[train_index, raw.columns==variables['target_var']]
         test_target=raw.loc[test_index, raw.columns==variables['target_var']]
-        
+
         #get dtypes series
         dtypes=raw.dtypes
 
         return train_X,test_X,dtypes,train_target,test_target
-    
+
     #Iterates over config_file and generates miss masks based on the miss_strats and miss_rates lists
     def make_miss_masks(self):
         print("Sorry, still under development!")
         return
-    
+
     # Applies missing completely at random to a ones_matrix with corresponding miss_rate
     def MCAR(ones_matrix, miss_rate):
         return mask_matrix
-    
+
     # Applies MNAR to a ones_matrix with corresponding miss_rate
     def MNAR(ones_matrix, miss_rate):
         return mask_matrix
-    
+
     #method that can be called to produce the corrupted datasets from the list of mask matrices
     def ds_corruptor(self):
         return corrupted_datasets
-    
-    
-#Class call example
-#
-credit=dataset_folder(dataset='credit',miss_strats='MCAR',miss_rates=0.5,n=3)
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
+def test():
+    #Class call example
+    credit=dataset_folder(dataset='credit',miss_strats='MCAR',miss_rates=0.5,n=3)
+    return credit
+
+if __name__ == "__main__":
+    credit = test()
+
