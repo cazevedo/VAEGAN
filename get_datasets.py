@@ -141,7 +141,7 @@ class dataset_folder():
         test_index.sort()
         train_index=list(set(range(len(raw))).difference(test_index))
         #splits
-        train_X=raw.loc[train_index, variables['target_var']]
+        train_X=raw.loc[train_index, raw.columns != variables['target_var']]
         test_X=raw.loc[test_index, raw.columns != variables['target_var']]
         train_target=raw.loc[train_index, raw.columns==variables['target_var']]
         test_target=raw.loc[test_index, raw.columns==variables['target_var']]
