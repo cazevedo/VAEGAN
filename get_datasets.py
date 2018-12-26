@@ -2,10 +2,11 @@ import pandas as pd
 import numpy as np
 from torchvision import datasets as tds
 import random
+import copy
 
 
 class dataset_folder():
-    def __init__(self,dataset,miss_strats,miss_rates,n,target=None,train_ratio=None):
+    def __init__(self,dataset,miss_strats,miss_rates,n=1,target=None,train_ratio=None):
         self.config_file=self.config(miss_strats,miss_rates,n,train_ratio)
         self.orig_ds=self.ds_loader(dataset,target)
         self.miss_masks=self.make_miss_masks()
@@ -15,9 +16,10 @@ class dataset_folder():
         miss_strats,miss_rates,train_ratio=self.verify_inputs(miss_strats,miss_rates,n,train_ratio)
         #miss_strats and miss_rates are now a lists of size n
         config_file={
-                'miss_strats':miss_strats,
-                'miss_rates':miss_rates,
-                'train_ratio':train_ratio
+                'n':n, #number of amputation rounds
+                'miss_strats':miss_strats, #list of miss strats, 1 for each amputation round
+                'miss_rates':miss_rates, #list of miss rates, 1 for each amputation round
+                'train_ratio':train_ratio #train split ratio for the dataset
                 }
         return config_file
 
@@ -29,12 +31,15 @@ class dataset_folder():
         ## Verifying inputs
         ### Verify n
         if type(n)!=int:
-            raise TypeError("The argument number of imputation tests 'n' must be an integer")
-        
+            raise TypeError("The argument number of amputation rounds 'n' must be an integer")
+        elif n<=0:
+            raise ValueError("The argument number of amputation rounds 'n' must be bigger than 0")
+            
+            
         ### Verify train_ratio
         if train_ratio is None:
             train_ratio='default'
-            print('Using default train_ratio, not valid for custom datasets.')
+            print('Default train_ratio is allowed only for the supported datasets. Custom datasets require train_ratio.')
         elif type(train_ratio)!=float and type(train_ratio)!=int:
             raise TypeError("The argument number of imputation tests 'train_ratio' must be a float or an integer")
         elif train_ratio<=0 or train_ratio>1:
@@ -140,6 +145,7 @@ class dataset_folder():
         
         #If a different train_ratio is specified
         if train_ratio!='default':
+            print('Leave train_ratio as blank for the common value used in benchmarks')
             #Fuse observations with new indexes before splitting them
             X=pd.concat([train_X,test_X],axis=0).reset_index(drop=True)
             target=pd.concat([train_target,test_target],axis=0).reset_index(drop=True)
@@ -206,26 +212,78 @@ class dataset_folder():
     
     #Iterates over config_file and generates miss masks based on the miss_strats and miss_rates lists
     def make_miss_masks(self):
-        print("Sorry, the miss masks are still under development!")
-        return
+        # Map implemented miss strategy functions
+        strategies={
+                'MCAR':self.MCAR,
+                'MNAR':self.MNAR}
+        
+        #Initialize miss masks dictionary
+        miss_masks={}
+        
+        #Iterate over the n amputation rounds
+        for i in range(self.config_file['n']):
+            miss_masks[i]={
+                    'train_X':None,
+                     'test_X':None}
+            for partition in miss_masks[i]:
+                data=self.orig_ds[partition]
+                length,width=data.shape
+                miss_rate=self.config_file['miss_rates'][i]
+                miss_strat=self.config_file["miss_strats"][i]
+                #print(length,width,miss_rate)
+                #print(strategies[miss_strat])
+                mask=strategies[miss_strat](length,width,miss_rate)
+                miss_masks[i][partition]=pd.DataFrame(mask,columns=data.columns,index=data.index) 
+        return miss_masks
     
     # Applies missing completely at random to a ones_matrix with corresponding miss_rate
-    def MCAR(ones_matrix, miss_rate):
+    def MCAR(self,length,width, miss_rate):
+        #Create random matrix with given shape from uniform distribution in [0,1]
+        mask_matrix=np.random.rand(length,width)
+        #Random values below miss_rate get smoothed to 0
+        mask_matrix[(mask_matrix<miss_rate)]=0
+        #Random values above miss_rate get smoothed to 1
+        mask_matrix[(mask_matrix>=miss_rate)]=1
         return mask_matrix
     
     # Applies MNAR to a ones_matrix with corresponding miss_rate
-    def MNAR(ones_matrix, miss_rate):
-        return mask_matrix
+    def MNAR(length, width, miss_rate):
+        print("Sorry, MNAR amputation is still under development!")
+        return
     
     #method that can be called to produce the corrupted datasets from the list of mask matrices
     def ds_corruptor(self):
-        return corrupted_datasets
+        print('Generating the corrupted datasets from the mask matrixes.')
+        #Initialize corrupted datasets dictionary
+        corr_ds={
+                'train_target':self.orig_ds['train_target'],
+                 'test_target':self.orig_ds['test_target'],
+                 'corr_X':{}}
+        
+        for i in self.miss_masks:
+            corr_ds['corr_X'][i]={
+                    'train_X':None,
+                    'test_X':None}
+            for partition in corr_ds['corr_X'][i]:
+                mask_matrix=self.miss_masks[i][partition]
+                dataframe=self.orig_ds[partition]
+                corr_ds['corr_X'][i][partition]=mask_matrix.where(mask_matrix==1,np.nan).mask(mask_matrix==1,dataframe)
+        return corr_ds
     
     
 #Class call example
 #Call the datasets
-credit=dataset_folder(dataset='credit',miss_strats='MCAR',miss_rates=0.5,n=3,train_ratio=0.1).orig_ds
-mnist=dataset_folder(dataset='MNIST',miss_strats='MCAR',miss_rates=0.5,n=3,train_ratio=0.1).orig_ds
+##Credit dataset
+credit=dataset_folder(dataset='credit',miss_strats='MCAR',miss_rates=0.5,n=3,train_ratio=0.9)
+credit_orig_ds=credit.orig_ds #get the original dataset with its partitions
+credit_miss_masks=credit.miss_masks #get the miss masks for the n folds
+credit_corr_ds=credit.ds_corruptor() #get the corrupted datasets from the mask matrixes
+
+##MNIST dataset
+mnist=dataset_folder(dataset='MNIST',miss_strats='MCAR',miss_rates=0.5,n=3)
+mnist_orig_ds=mnist.orig_ds #get the original dataset with its partitions
+mnist_miss_masks=mnist.miss_masks #get the miss masks for the n folds
+mnist_corr_ds=mnist.ds_corruptor() #get the corrupted datasets from the mask matrixes
     
     
     
