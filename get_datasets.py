@@ -5,30 +5,42 @@ import random
 
 
 class dataset_folder():
-    def __init__(self,dataset,miss_strats,miss_rates,n,target=None,train_ratio=0.9):
-        self.config=self.config(miss_strats,miss_rates,n)
-        self.orig_ds=self.ds_loader(dataset,target,train_ratio)
+    def __init__(self,dataset,miss_strats,miss_rates,n,target=None,train_ratio=None):
+        self.config_file=self.config(miss_strats,miss_rates,n,train_ratio)
+        self.orig_ds=self.ds_loader(dataset,target)
         self.miss_masks=self.make_miss_masks()
-
+    
     #Creates config file with list of miss_strats and miss_rates of size n
-    def config(self,miss_strats,miss_rates,n):
-        miss_strats,miss_rates=self.verify_inputs(miss_strats,miss_rates,n)
+    def config(self,miss_strats,miss_rates,n,train_ratio):
+        miss_strats,miss_rates,train_ratio=self.verify_inputs(miss_strats,miss_rates,n,train_ratio)
         #miss_strats and miss_rates are now a lists of size n
-        config={
+        config_file={
                 'miss_strats':miss_strats,
-                'miss_rates':miss_rates
+                'miss_rates':miss_rates,
+                'train_ratio':train_ratio
                 }
-        return config
+        return config_file
 
     #Verifies all configuration inputs
-    def verify_inputs(self,miss_strats,miss_rates,n):
+    def verify_inputs(self,miss_strats,miss_rates,n,train_ratio):
         ### List of accepted strats
         accepted_strats=['MCAR','MNAR']
-
+        
         ## Verifying inputs
         ### Verify n
         if type(n)!=int:
             raise TypeError("The argument number of imputation tests 'n' must be an integer")
+        
+        ### Verify train_ratio
+        if train_ratio is None:
+            train_ratio='default'
+            print('Using default train_ratio, not valid for custom datasets.')
+        elif type(train_ratio)!=float and type(train_ratio)!=int:
+            raise TypeError("The argument number of imputation tests 'train_ratio' must be a float or an integer")
+        elif train_ratio<=0 or train_ratio>1:
+                raise ValueError("Valid 'train_ratio' splits are floats contained in ]0,1]")
+        else:
+            print('Using a {0:.01f}% train split'.format(round(train_ratio*100,2)))
 
         ### Verify miss_strats
         if type(miss_strats)==list:
@@ -54,7 +66,7 @@ class dataset_folder():
             miss_strats=[miss_strats]*n
         else:
             raise TypeError("The [miss_strats] argument must be a string or a list of elements contained in {}".format(accepted_strats))
-
+        
         ### Verify miss_rates
         if type(miss_rates)==list:
             if len(miss_rates)==n:
@@ -83,23 +95,22 @@ class dataset_folder():
             miss_rates=[miss_rates]*n
         else:
             raise TypeError("The [miss_rates] argument must be a float or a list of elements contained in ]0,1[")
-
-        return miss_strats,miss_rates
-
+    
+        return miss_strats,miss_rates,train_ratio
+    
     #Devolve orig_ds, um dicionário com todos os dataframes correspondentes
-    def ds_loader(self,dataset,target,train_ratio):
-        supported_datasets={
-                #'MNIST':load_MNIST(),
-                'credit':self.load_credit(train_ratio)
+    def ds_loader(self,dataset,target):
+        supported_datasets={'MNIST':self.load_MNIST,
+                'credit':self.load_credit
                 }
 
         if type(dataset)==pd.core.frame.DataFrame:
-            print("Sorry, still under development!")
+            print("Sorry, personal dataframe processing is still under development!")
             return
         if type(dataset)==str:
             if dataset in supported_datasets:
-                train_X,test_X,dtypes,train_target,test_target=supported_datasets[dataset]
-
+                train_X,test_X,dtypes,train_target,test_target=supported_datasets[dataset]()
+                
         orig_ds={
                 'train_X':train_X,
                 'test_X':test_X,
@@ -108,17 +119,55 @@ class dataset_folder():
                 'test_target':test_target
                 }
         return orig_ds
-
+    
     ##
-    def load_MNIST():
-        return
+    def load_MNIST(self):
+        ##Create data partitions
+        train_part=[True,False]#tds modes for calling MNIST default partitions
+        train_ratio=self.config_file['train_ratio']
+        
+        #Creating  default partitions
+        for mode in train_part:
+            ds_mnist=tds.MNIST(root='datasets/MNIST',train=mode,download=True)
+            if mode: #Train partition selected
+                X,target=ds_mnist.train_data[:],ds_mnist.train_labels[:]
+                train_X=pd.DataFrame(np.array([np.asarray(i).flatten() for i in X]),dtype=np.uint8)
+                train_target=pd.DataFrame(np.array([np.asarray(i).flatten() for i in target]),columns=['target'],dtype=np.uint8).astype('category')
+            else: #Test partition
+                X,target=ds_mnist.test_data[:],ds_mnist.test_labels[:]
+                test_X=pd.DataFrame(np.array([np.asarray(i).flatten() for i in X]),dtype=np.uint8)
+                test_target=pd.DataFrame(np.array([np.asarray(i).flatten() for i in target]),columns=['target'],dtype=np.uint8).astype('category')         
+        
+        #If a different train_ratio is specified
+        if train_ratio!='default':
+            #Fuse observations with new indexes before splitting them
+            X=pd.concat([train_X,test_X],axis=0).reset_index(drop=True)
+            target=pd.concat([train_target,test_target],axis=0).reset_index(drop=True)
+            
+            #Sample random test and train indexes, according to train_ratio
+            test_index=random.sample(range(len(target)),int(len(target)*(1-train_ratio)))
+            test_index.sort()
+            train_index=list(set(range(len(target))).difference(test_index))
+            
+            #Split partitions
+            train_X=X.loc[train_index]
+            test_X=X.loc[test_index]
+            train_target=target.loc[train_index]
+            test_target=target.loc[test_index]
+        
+        #Save column datatypes
+        dtypes=pd.concat([test_X,test_target],axis=1).dtypes
 
-    def load_credit(self, train_ratio):
+        return train_X,test_X,dtypes,train_target,test_target
+    
+    def load_credit(self):
         #Import the dataset from excel
         raw=pd.read_excel('datasets/default of credit card clients.xls',
                           index_col='ID',
                           dtype='int64')
-
+        
+        train_ratio=self.config_file['train_ratio']
+        
         ###Column type mapping
         #ordinal: belong to an ordered finite set -> uint8
         #categorical: belong to an unordered finite set -> category
@@ -135,7 +184,11 @@ class dataset_folder():
         raw[variables['ordinal_vars']]=raw[variables['ordinal_vars']].astype(np.uint8)
         raw[variables['categorical_vars']]=raw[variables['categorical_vars']].astype('category')
         raw[variables['real_vars']]=raw[variables['real_vars']].astype('int64')
-
+        
+        #Define train_ratio
+        if train_ratio=='default':
+            train_ratio=0.9 #Default ratio of 0.9 for this dataset
+            
         #Split dataset - create indices
         test_index=random.sample(range(len(raw)),int(len(raw)*(1-train_ratio)))
         test_index.sort()
@@ -145,34 +198,40 @@ class dataset_folder():
         test_X=raw.loc[test_index, raw.columns != variables['target_var']]
         train_target=raw.loc[train_index, raw.columns==variables['target_var']]
         test_target=raw.loc[test_index, raw.columns==variables['target_var']]
-
+        
         #get dtypes series
         dtypes=raw.dtypes
 
         return train_X,test_X,dtypes,train_target,test_target
-
+    
     #Iterates over config_file and generates miss masks based on the miss_strats and miss_rates lists
     def make_miss_masks(self):
-        print("Sorry, still under development!")
+        print("Sorry, the miss masks are still under development!")
         return
-
+    
     # Applies missing completely at random to a ones_matrix with corresponding miss_rate
     def MCAR(ones_matrix, miss_rate):
         return mask_matrix
-
+    
     # Applies MNAR to a ones_matrix with corresponding miss_rate
     def MNAR(ones_matrix, miss_rate):
         return mask_matrix
-
+    
     #method that can be called to produce the corrupted datasets from the list of mask matrices
     def ds_corruptor(self):
         return corrupted_datasets
-
-def test():
-    #Class call example
-    credit=dataset_folder(dataset='credit',miss_strats='MCAR',miss_rates=0.5,n=3)
-    return credit
-
-if __name__ == "__main__":
-    credit = test()
-
+    
+    
+#Class call example
+#Call the datasets
+credit=dataset_folder(dataset='credit',miss_strats='MCAR',miss_rates=0.5,n=3,train_ratio=0.1).orig_ds
+mnist=dataset_folder(dataset='MNIST',miss_strats='MCAR',miss_rates=0.5,n=3,train_ratio=0.1).orig_ds
+    
+    
+    
+    
+    
+    
+    
+    
+    
