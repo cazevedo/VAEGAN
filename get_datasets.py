@@ -271,19 +271,31 @@ class dataset_folder():
         return corr_ds
 
 
+def credit_example():
+    credit=dataset_folder(dataset='credit',miss_strats='MCAR',miss_rates=0.5,n=3,train_ratio=0.9)
+    # credit_orig_ds=credit.orig_ds #get the original dataset with its partitions
+    # credit_miss_masks=credit.miss_masks #get the miss masks for the n folds
+    return credit
+
+
+def mnist_example():
+    mnist=dataset_folder(dataset='MNIST',miss_strats='MCAR',miss_rates=0.5,n=3)
+    # mnist_orig_ds=mnist.orig_ds #get the original dataset with its partitions
+    # mnist_miss_masks=mnist.miss_masks #get the miss masks for the n folds
+    return mnist
+
+
 #Class call example
 def test():
     ##Credit dataset
-    credit=dataset_folder(dataset='credit',miss_strats='MCAR',miss_rates=0.5,n=3,train_ratio=0.9)
-    credit_orig_ds=credit.orig_ds #get the original dataset with its partitions
-    credit_miss_masks=credit.miss_masks #get the miss masks for the n folds
-    credit_corr_ds=credit.ds_corruptor() #get the corrupted datasets from the mask matrixes
+    print("Test Credit dataset")
+    credit = credit_example()
+    credit.ds_corruptor() #get the corrupted datasets from the mask matrixes    
 
     ##MNIST dataset
-    mnist=dataset_folder(dataset='MNIST',miss_strats='MCAR',miss_rates=0.5,n=3)
-    mnist_orig_ds=mnist.orig_ds #get the original dataset with its partitions
-    mnist_miss_masks=mnist.miss_masks #get the miss masks for the n folds
-    mnist_corr_ds=mnist.ds_corruptor() #get the corrupted datasets from the mask matrixes
+    print("Test MNIST dataset")
+    mnist = mnist_example()
+    mnist.ds_corruptor() #get the corrupted datasets from the mask matrixes
 
 
 if __name__ == "__main__":
