@@ -164,6 +164,11 @@ class dataset_folder():
         
         #Save column datatypes
         dtypes=pd.concat([test_X,test_target],axis=1).dtypes
+        for (index,value) in dtypes.items():
+            if value=='uint8':
+                dtypes.loc[index]='count'
+            else:
+                dtypes.loc[index]='cat'
 
         return train_X,test_X,dtypes,train_target,test_target
     
@@ -176,21 +181,27 @@ class dataset_folder():
         train_ratio=self.config_file['train_ratio']
         
         ###Column type mapping
-        #ordinal: belong to an ordered finite set -> uint8
-        #categorical: belong to an unordered finite set -> category
+        #ordinal: belong to an ordered finite set -> int8
+        #cat: belong to an unordered finite set -> category
         #real: take values in the real line R -> int64 or float64
         #target: predicted variable -> category
-        variables={'ordinal_vars':['AGE','PAY_1','PAY_2','PAY_3','PAY_4','PAY_5','PAY_6'],
-                    'categorical_vars':['default next month','SEX','EDUCATION','MARRIAGE'],
-                    'target_var':'default next month',
-                    'real_vars':['LIMIT_BAL','BILL_AMT1','BILL_AMT2','BILL_AMT3',
-                                 'BILL_AMT4','BILL_AMT5','BILL_AMT6','PAY_AMT1',
-                                 'PAY_AMT2','PAY_AMT3','PAY_AMT4','PAY_AMT5','PAY_AMT6']
+        #pos: real positive numbers -> uint64
+        #count: positive ordered numbers -> uint16
+        variables={'ordinal':['PAY_1','PAY_2','PAY_3','PAY_4','PAY_5','PAY_6'],
+                   'count':['AGE'],
+                   'pos':['LIMIT_BAL','PAY_AMT1','PAY_AMT2','PAY_AMT3',
+                          'PAY_AMT4','PAY_AMT5','PAY_AMT6'],
+                    'cat':['default next month','SEX','EDUCATION','MARRIAGE'],
+                    'target':'default next month',
+                    'real':['BILL_AMT1','BILL_AMT2','BILL_AMT3',
+                                 'BILL_AMT4','BILL_AMT5','BILL_AMT6',]
                     }
         #Format dtypes
-        raw[variables['ordinal_vars']]=raw[variables['ordinal_vars']].astype(np.uint8)
-        raw[variables['categorical_vars']]=raw[variables['categorical_vars']].astype('category')
-        raw[variables['real_vars']]=raw[variables['real_vars']].astype('int64')
+        raw[variables['ordinal']]=raw[variables['ordinal']].astype(np.int8)
+        raw[variables['count']]=raw[variables['count']].astype('uint8')
+        raw[variables['pos']]=raw[variables['pos']].astype('uint64')
+        raw[variables['cat']]=raw[variables['cat']].astype('category')
+        raw[variables['real']]=raw[variables['real']].astype('int64')
         
         #Define train_ratio
         if train_ratio=='default':
@@ -201,13 +212,17 @@ class dataset_folder():
         test_index.sort()
         train_index=list(set(range(len(raw))).difference(test_index))
         #splits
-        train_X=raw.loc[train_index, raw.columns != variables['target_var']]
-        test_X=raw.loc[test_index, raw.columns != variables['target_var']]
-        train_target=raw.loc[train_index, raw.columns==variables['target_var']]
-        test_target=raw.loc[test_index, raw.columns==variables['target_var']]
+        train_X=raw.loc[train_index, raw.columns != variables['target']]
+        test_X=raw.loc[test_index, raw.columns != variables['target']]
+        train_target=raw.loc[train_index, raw.columns==variables['target']]
+        test_target=raw.loc[test_index, raw.columns==variables['target']]
         
         #get dtypes series
         dtypes=raw.dtypes
+        for (key, value) in variables.items():
+            if key == 'target':
+                continue
+            dtypes[value]=key
 
         return train_X,test_X,dtypes,train_target,test_target
     
