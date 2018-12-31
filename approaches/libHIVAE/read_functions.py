@@ -12,6 +12,75 @@ import csv
 import numpy as np
 import os
 from sklearn.metrics import mean_squared_error
+import pandas as pd
+
+'''
+dataset:
+    orig_ds:
+        dtypes: pandas Series
+        train_X/test_X: pandas DataFrame
+        train_target/test_target: pandas Dataframe
+    miss_masks: dict (0, 1, 2, ... for each config)
+        [0]: dict
+            train_X/test_X: DataFrame
+'''
+def from_custom(dataset, config_idx):
+
+    # Construct types from custom dataset
+    custom_types = dataset.orig_ds['dtypes']
+    custom_data = dataset.orig_ds['train_X']
+
+    miss_mask = dataset.miss_masks[config_idx]
+
+    onehot_dataset = custom_data.copy()
+    types_dict = []
+    ordered_columns = []
+
+    for name, dtype in custom_types.items():
+        if name not in custom_data:
+            print('Skipping {}, not in train_X'.format(name))
+            continue
+
+        if dtype in ['pos', 'real', 'count']:
+            types_dict.append({
+                'dim': '1',
+                'nclass': '',
+                'type': dtype,
+                'name': name
+                })
+            ordered_columns.append(name)
+
+
+        elif dtype in ['cat', 'ordinal']:
+            if custom_data[name].dtype.name != 'category':
+                raise ValueError("'cat' and 'ordinal' variables should be Categorical variables (ordinal should be ordered categories)")
+            # Find out how many classes from the data
+            num_classes = str(custom_data[name].dtypes.categories.shape[0])
+            types_dict.append({
+                'dim': num_classes,
+                'nclass': num_classes,
+                'type': dtype,
+                'name': name
+                })
+
+            onehot = pd.get_dummies(custom_data[name], drop_first=True, prefix_sep=':', prefix=name)
+            ordered_columns.extend(onehot.columns)
+            onehot_dataset[onehot.columns] = onehot
+
+        else:
+            raise NotImplementedError(dtype)
+
+    n_samples = len(onehot_dataset)
+
+    # reorder columns to be in same order of types_dict
+    onehot_dataset = onehot_dataset[ordered_columns]
+
+    # TODO implement for other datasets if needed
+    true_miss_mask = np.ones([n_samples,len(types_dict)])
+
+    return custom_data, onehot_dataset, types_dict, miss_mask, true_miss_mask, n_samples
+
+
 
 def read_data(data_file, types_file, miss_file, true_miss_file):
     
