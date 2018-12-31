@@ -181,7 +181,7 @@ class dataset_folder():
         train_ratio=self.config_file['train_ratio']
         
         ###Column type mapping
-        #ordinal: belong to an ordered finite set -> int8
+        #ordinal: belong to an ordered finite set -> category, ordered
         #cat: belong to an unordered finite set -> category
         #real: take values in the real line R -> int64 or float64
         #target: predicted variable -> category
@@ -197,7 +197,7 @@ class dataset_folder():
                                  'BILL_AMT4','BILL_AMT5','BILL_AMT6',]
                     }
         #Format dtypes
-        raw[variables['ordinal']]=raw[variables['ordinal']].astype(np.int8)
+        raw[variables['ordinal']]=raw[variables['ordinal']].astype('category', ordered=True)
         raw[variables['count']]=raw[variables['count']].astype('uint8')
         raw[variables['pos']]=raw[variables['pos']].astype('uint64')
         raw[variables['cat']]=raw[variables['cat']].astype('category')
