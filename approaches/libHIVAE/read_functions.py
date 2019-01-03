@@ -30,7 +30,7 @@ def from_custom(dataset, config_idx):
     custom_types = dataset.orig_ds['dtypes']
     custom_data = dataset.orig_ds['train_X']
 
-    miss_mask = dataset.miss_masks[config_idx]
+    miss_mask = dataset.miss_masks[config_idx]['train_X']
 
     onehot_dataset = custom_data.copy()
     types_dict = []
