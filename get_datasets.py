@@ -5,6 +5,7 @@ import random
 import copy
 
 
+
 class dataset_folder():
     def __init__(self,dataset,miss_strats,miss_rates,n=1,target=None,train_ratio=None):
         self.config_file=self.config(miss_strats,miss_rates,n,train_ratio)
@@ -181,7 +182,7 @@ class dataset_folder():
         train_ratio=self.config_file['train_ratio']
         
         ###Column type mapping
-        #ordinal: belong to an ordered finite set -> category, ordered
+        #ordinal: belong to an ordered finite set -> int8
         #cat: belong to an unordered finite set -> category
         #real: take values in the real line R -> int64 or float64
         #target: predicted variable -> category
@@ -197,7 +198,7 @@ class dataset_folder():
                                  'BILL_AMT4','BILL_AMT5','BILL_AMT6',]
                     }
         #Format dtypes
-        raw[variables['ordinal']]=raw[variables['ordinal']].astype('category', ordered=True)
+        raw[variables['ordinal']]=raw[variables['ordinal']].astype(np.int8)
         raw[variables['count']]=raw[variables['count']].astype('uint8')
         raw[variables['pos']]=raw[variables['pos']].astype('uint64')
         raw[variables['cat']]=raw[variables['cat']].astype('category')
@@ -225,6 +226,48 @@ class dataset_folder():
             dtypes[value]=key
 
         return train_X,test_X,dtypes,train_target,test_target
+    
+    #receives a dataframe, encodes ordinal and categorical vars according to dtypes labels
+    def encode_vars(self,df):
+        #deepcopy the input dataframe (test or train)
+        df_encoded=pd.DataFrame()
+        
+        ## turns ordinal and count variables of the original dataframe to thermometer encodes
+        def thermo_encode(self,col):
+            placeholder=copy.deepcopy(col)
+            
+            #transforms values of the matrix to thermo_encoded vectors
+            def encode_val(val):
+                vector=np.zeros(max_v-min_v)
+                if val!=min_v:
+                    vector[:val-min_v]=1
+                return vector
+            
+            #creates a dataframe made of thermo_encoded vectors for each column
+            min_v=placeholder.min()
+            max_v=placeholder.max()
+            thermo_encode=pd.DataFrame([encode_val(val) for val in placeholder],
+                                       columns=pd.MultiIndex.from_arrays([[placeholder.name]*(max_v-min_v),list(range((max_v-min_v)))]))
+            print("{} thermometer encoded on a {} shape.".format(col.name,thermo_encode.shape))
+            return thermo_encode
+        
+                ## turns ordinal and count variables of the original dataframe to thermometer encodes
+        def onehot_encode(self,col):
+            placeholder=copy.deepcopy(col)
+            onehot_encode=pd.get_dummies(placeholder)
+            onehot_encode.columns=pd.MultiIndex.from_arrays([[placeholder.name]*len(placeholder.unique()), list(placeholder.unique())])
+            print("{} one-hot encoded on a {} shape.".format(placeholder.name,onehot_encode.shape))
+            return onehot_encode
+        
+        ## Call columns to encode and run encoders
+        for col in df:
+            if self.orig_ds['dtypes'][col]=='ordinal':
+                df_encoded=pd.concat([df_encoded,thermo_encode(self,df[col])],axis=1)
+            elif self.orig_ds['dtypes'][col]=='cat':
+                df_encoded=pd.concat([df_encoded,onehot_encode(self,df[col])],axis=1)
+            else:
+                df_encoded=pd.concat([df_encoded,df[col]],axis=1)
+        return df_encoded
     
     #Iterates over config_file and generates miss masks based on the miss_strats and miss_rates lists
     def make_miss_masks(self):
@@ -313,13 +356,18 @@ class dataset_folder():
                 dataframe=self.orig_ds[partition]
                 corr_ds['corr_X'][i][partition]=mask_matrix.where(mask_matrix==1,np.nan).mask(mask_matrix==1,dataframe)
         return corr_ds
-    
+
     
 def credit_example():
     credit=dataset_folder(dataset='credit',miss_strats=['MAR','MCAR'],miss_rates=0.5,n=3,train_ratio=0.9)
     # credit_orig_ds=credit.orig_ds #get the original dataset with its partitions
     # credit_miss_masks=credit.miss_masks #get the miss masks for the n folds
     return credit
+
+credit=credit_example()
+test_X=credit.orig_ds['test_X']
+encoded_test_X=credit.encode_vars(test_X)       
+
 
 
 def mnist_example():
