@@ -364,11 +364,6 @@ def credit_example():
     # credit_miss_masks=credit.miss_masks #get the miss masks for the n folds
     return credit
 
-credit=credit_example()
-test_X=credit.orig_ds['test_X']
-encoded_test_X=credit.encode_vars(test_X)       
-
-
 
 def mnist_example():
     mnist=dataset_folder(dataset='MNIST',miss_strats=['MAR','MCAR'],miss_rates=0.5,n=3)
@@ -384,6 +379,7 @@ def test():
     credit_orig_ds=credit.orig_ds #get the original dataset with its partitions
     credit_miss_masks=credit.miss_masks #get the miss masks for the n folds
     credit_corr_ds=credit.ds_corruptor() #get the corrupted datasets from the mask matrixes
+    credit_encoded = credit.encode_vars(credit.orig_ds) # encode the dataset
     print("Test Credit dataset")
 
     ##MNIST dataset
