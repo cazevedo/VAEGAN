@@ -3,8 +3,7 @@ import numpy as np
 from torchvision import datasets as tds
 import random
 import copy
-
-
+import time
 
 class dataset_folder():
     def __init__(self,dataset,miss_strats,miss_rates,n=1,target=None,train_ratio=None):
@@ -227,13 +226,16 @@ class dataset_folder():
 
         return train_X,test_X,dtypes,train_target,test_target
     
-    #receives a dataframe, encodes ordinal and categorical vars according to dtypes labels
-    def encode_vars(self,df):
-        #deepcopy the input dataframe (test or train)
-        df_encoded=pd.DataFrame()
+    #Receives orig_ds as an argument and returns encoded_ds
+    ##same style as orig_ds but with encoded ordinal and categorical vars
+    @staticmethod
+    def encode_vars(orig_ds):
+        encoded_ds={'dtypes':orig_ds['dtypes']}
+        ds_dic={'target':pd.concat([orig_ds['test_target'],orig_ds['train_target']]),
+                'X':pd.concat([orig_ds['test_X'],orig_ds['train_X']])}
         
         ## turns ordinal and count variables of the original dataframe to thermometer encodes
-        def thermo_encode(self,col):
+        def thermo_encode(col):
             placeholder=copy.deepcopy(col)
             
             #transforms values of the matrix to thermo_encoded vectors
@@ -248,26 +250,36 @@ class dataset_folder():
             max_v=placeholder.max()
             thermo_encode=pd.DataFrame([encode_val(val) for val in placeholder],
                                        columns=pd.MultiIndex.from_arrays([[placeholder.name]*(max_v-min_v),list(range((max_v-min_v)))]))
-            print("{} thermometer encoded on a {} shape.".format(col.name,thermo_encode.shape))
+            print("{} column was thermometer encoded into {} columns.".format(col.name,thermo_encode.shape[1]))
             return thermo_encode
         
                 ## turns ordinal and count variables of the original dataframe to thermometer encodes
-        def onehot_encode(self,col):
+        def onehot_encode(col):
             placeholder=copy.deepcopy(col)
             onehot_encode=pd.get_dummies(placeholder)
-            onehot_encode.columns=pd.MultiIndex.from_arrays([[placeholder.name]*len(placeholder.unique()), list(placeholder.unique())])
-            print("{} one-hot encoded on a {} shape.".format(placeholder.name,onehot_encode.shape))
+            onehot_encode.columns=pd.MultiIndex.from_arrays([[placeholder.name]*len(placeholder.cat.categories), list(placeholder.cat.categories)])
+            print("{} column was one-hot encoded into {} columns.".format(placeholder.name,onehot_encode.shape[1]))
             return onehot_encode
         
-        ## Call columns to encode and run encoders
-        for col in df:
-            if self.orig_ds['dtypes'][col]=='ordinal':
-                df_encoded=pd.concat([df_encoded,thermo_encode(self,df[col])],axis=1)
-            elif self.orig_ds['dtypes'][col]=='cat':
-                df_encoded=pd.concat([df_encoded,onehot_encode(self,df[col])],axis=1)
+        ## 1)Iterate X and target
+        ## 2)Iterate columns and run encoders on ordinal and cat columns
+        ## 3)Insert in encoded_ds
+        for (name,df) in ds_dic.items():
+            df_encoded=pd.DataFrame()
+            for col in df:
+                if encoded_ds['dtypes'][col]=='ordinal':
+                    df_encoded=pd.concat([df_encoded,thermo_encode(df[col])],axis=1)
+                elif encoded_ds['dtypes'][col]=='cat':
+                    df_encoded=pd.concat([df_encoded,onehot_encode(df[col])],axis=1)
+                else:
+                    df_encoded=pd.concat([df_encoded,df[col]],axis=1)
+            if name=='X':
+                encoded_ds['test_X']=df_encoded.loc[orig_ds['test_X'].index]
+                encoded_ds['train_X']=df_encoded.loc[orig_ds['train_X'].index]
             else:
-                df_encoded=pd.concat([df_encoded,df[col]],axis=1)
-        return df_encoded
+                encoded_ds['test_target']=df_encoded.loc[orig_ds['test_target'].index]
+                encoded_ds['train_target']=df_encoded.loc[orig_ds['train_target'].index]
+        return encoded_ds
     
     #Iterates over config_file and generates miss masks based on the miss_strats and miss_rates lists
     def make_miss_masks(self):
@@ -357,37 +369,35 @@ class dataset_folder():
                 corr_ds['corr_X'][i][partition]=mask_matrix.where(mask_matrix==1,np.nan).mask(mask_matrix==1,dataframe)
         return corr_ds
 
-    
+####### Tests and example cals ######
+        
 def credit_example():
-    credit=dataset_folder(dataset='credit',miss_strats=['MAR','MCAR'],miss_rates=0.5,n=3,train_ratio=0.9)
-    # credit_orig_ds=credit.orig_ds #get the original dataset with its partitions
-    # credit_miss_masks=credit.miss_masks #get the miss masks for the n folds
+    credit=dataset_folder(dataset='credit',miss_strats=['MAR','MAR','MCAR'],miss_rates=0.5,n=10,train_ratio=0.9) 
     return credit
 
-
 def mnist_example():
-    mnist=dataset_folder(dataset='MNIST',miss_strats=['MAR','MCAR'],miss_rates=0.5,n=3)
-    # mnist_orig_ds=mnist.orig_ds #get the original dataset with its partitions
-    # mnist_miss_masks=mnist.miss_masks #get the miss masks for the n folds
+    mnist=dataset_folder(dataset='MNIST',miss_strats=['MAR','MAR','MCAR'],miss_rates=0.5,n=10)
     return mnist
-
 
 #Class call example
 def test():
+    start_time = time.time()
     ##Credit dataset
     credit = credit_example()
     credit_orig_ds=credit.orig_ds #get the original dataset with its partitions
     credit_miss_masks=credit.miss_masks #get the miss masks for the n folds
     credit_corr_ds=credit.ds_corruptor() #get the corrupted datasets from the mask matrixes
-    credit_encoded = credit.encode_vars(credit.orig_ds) # encode the dataset
-    print("Test Credit dataset")
+    credit_encoded_ds=credit.encode_vars(credit_orig_ds)  
+    print("Credit dataset example test completed in {%.1f} seconds.".format(time.time() - start_time))
 
+    start_time = time.time()
     ##MNIST dataset
     mnist = mnist_example()
     mnist_orig_ds=mnist.orig_ds #get the original dataset with its partitions
     mnist_miss_masks=mnist.miss_masks #get the miss masks for the n folds
     mnist_corr_ds=mnist.ds_corruptor() #get the corrupted datasets from the mask matrixes
-    print("Test MNIST dataset")
+    mnist_encoded_ds=mnist.encode_vars(mnist_orig_ds) 
+    print("MNIST dataset example test completed in {%.1f} seconds.".format(time.time() - start_time))
     
 if __name__ == "__main__":
      test()
