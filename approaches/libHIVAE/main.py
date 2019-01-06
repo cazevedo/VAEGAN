@@ -53,6 +53,10 @@ def run():
 
     #Get data
     train_data, types_dict, miss_mask, true_miss_mask, n_samples = read_functions.read_data(args.data_file, args.types_file, args.miss_file, args.true_miss_file)
+    print(train_data.shape)
+    print(miss_mask.shape)
+    print(true_miss_mask.shape) 
+
     #Get an integer number of batches
     n_batches = int(np.floor(np.shape(train_data)[0]/args.batch_size))
     #Compute the real miss_mask

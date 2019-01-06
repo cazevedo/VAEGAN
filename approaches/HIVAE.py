@@ -3,15 +3,30 @@ from .libHIVAE import parser_arguments, read_functions, graph_new
 import time
 import numpy as np
 import os
+from matplotlib import pyplot as plt
+
+def print_loss(epoch, start_time, avg_loss, avg_test_loglik, avg_KL_s, avg_KL_z):
+    print("Epoch: [%2d]  time: %4.4f, train_loglik: %.8f, KL_z: %.8f, KL_s: %.8f, ELBO: %.8f, Test_loglik: %.8f"
+          % (epoch, time.time() - start_time, avg_loss, avg_KL_z, avg_KL_s, avg_loss-avg_KL_z-avg_KL_s, avg_test_loglik))
 
 
-def train(args, train_data, types_dict, miss_mask, n_samples):
+plt.close('all')
+
+
+def train(args, train_data, types_dict, miss_mask, true_miss_mask, n_samples):
+
+	#Get an integer number of batches
+	n_batches = int(np.floor(np.shape(train_data)[0]/args.batch_size))
+	#Compute the real miss_mask
+	miss_mask = np.multiply(miss_mask, true_miss_mask)
+
 	#Creating graph
 	sess_HVAE = tf.Graph()
 
 	with sess_HVAE.as_default():
 	    tf_nodes = graph_new.HVAE_graph(args.model_name, types_dict, args.batch_size,
 	                                learning_rate=1e-3, z_dim=args.dim_latent_z, y_dim=args.dim_latent_y, s_dim=args.dim_latent_s, y_dim_partition=args.dim_latent_y_partition)
+
 
 	with tf.Session(graph=sess_HVAE) as session:
 	        
@@ -22,7 +37,7 @@ def train(args, train_data, types_dict, miss_mask, n_samples):
 	        saver.restore(session, network_file_name)
 	        print("Model restored.")
 	    else:
-	#        saver = tf.train.Saver()
+	#       saver = tf.train.Saver()
 	        print('Initizalizing Variables ...')
 	        tf.global_variables_initializer().run()
 	    
@@ -54,9 +69,11 @@ def train(args, train_data, types_dict, miss_mask, n_samples):
 	            train_data_aux = train_data[random_perm,:]
 	            miss_mask_aux = miss_mask[random_perm,:]
 	            true_miss_mask_aux = true_miss_mask[random_perm,:]
-	            
-	            for i in range(n_batches):      
-	                
+
+	            # import pdb; pdb.set_trace()
+
+	            for i in range(n_batches):
+
 	                #Create inputs for the feed_dict
 	                data_list, miss_list = read_functions.next_batch(train_data_aux, types_dict, miss_mask_aux, args.batch_size, index_batch=i)
 
@@ -70,10 +87,12 @@ def train(args, train_data, types_dict, miss_mask, n_samples):
 	                feedDict[tf_nodes['tau_GS']] = tau
 	                
 	                #Running VAE
+	                print("before run")
 	                _,loss,KL_z,KL_s,samples,log_p_x,log_p_x_missing,p_params,q_params  = session.run([tf_nodes['optim'], tf_nodes['loss_re'], tf_nodes['KL_z'], tf_nodes['KL_s'], tf_nodes['samples'],
 	                                                         tf_nodes['log_p_x'], tf_nodes['log_p_x_missing'],tf_nodes['p_params'],tf_nodes['q_params']],
 	                                                         feed_dict=feedDict)
-	                
+	                print("run")
+
 	                #Collect all samples, distirbution parameters and logliks in lists
 	                samples_list.append(samples)
 	                p_params_list.append(p_params)

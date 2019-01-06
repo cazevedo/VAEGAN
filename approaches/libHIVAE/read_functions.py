@@ -32,9 +32,8 @@ def from_custom(dataset, config_idx):
 
     miss_mask = dataset.miss_masks[config_idx]['train_X']
 
-    onehot_dataset = custom_data.copy()
+    encoded_dataset = dataset.encode_vars(dataset.orig_ds)['train_X']
     types_dict = []
-    ordered_columns = []
 
     for name, dtype in custom_types.items():
         if name not in custom_data:
@@ -48,14 +47,10 @@ def from_custom(dataset, config_idx):
                 'type': dtype,
                 'name': name
                 })
-            ordered_columns.append(name)
-
 
         elif dtype in ['cat', 'ordinal']:
-            if custom_data[name].dtype.name != 'category':
-                raise ValueError("'cat' and 'ordinal' variables should be Categorical variables (ordinal should be ordered categories)")
             # Find out how many classes from the data
-            num_classes = str(custom_data[name].dtypes.categories.shape[0])
+            num_classes = str(encoded_dataset[name].shape[1])
             types_dict.append({
                 'dim': num_classes,
                 'nclass': num_classes,
@@ -63,22 +58,26 @@ def from_custom(dataset, config_idx):
                 'name': name
                 })
 
-            onehot = pd.get_dummies(custom_data[name], drop_first=True, prefix_sep=':', prefix=name)
-            ordered_columns.extend(onehot.columns)
-            onehot_dataset[onehot.columns] = onehot
-
         else:
             raise NotImplementedError(dtype)
 
-    n_samples = len(onehot_dataset)
+    print(types_dict)
 
-    # reorder columns to be in same order of types_dict
-    onehot_dataset = onehot_dataset[ordered_columns]
+    n_samples = len(custom_data)
 
     # TODO implement for other datasets if needed
     true_miss_mask = np.ones([n_samples,len(types_dict)])
 
-    return custom_data, onehot_dataset, types_dict, miss_mask, true_miss_mask, n_samples
+    sum_dims = sum([int(t['dim']) for t in types_dict])
+    try:
+        assert sum_dims == encoded_dataset.shape[1]
+    except:
+        print(types_dict)
+        print(encoded_dataset.keys())
+        print(encoded_dataset.shape)
+        raise
+
+    return custom_data, encoded_dataset, types_dict, miss_mask, true_miss_mask, n_samples
 
 
 
@@ -115,7 +114,7 @@ def read_data(data_file, types_file, miss_file, true_miss_file):
         data = data_masked.filled(data_filler)
     else:
         true_miss_mask = np.ones([np.shape(data)[0],len(types_dict)]) #It doesn't affect our data
-    
+
     #Construct the data matrices
     data_complete = []
     for i in range(np.shape(data)[1]):
@@ -162,7 +161,7 @@ def read_data(data_file, types_file, miss_file, true_miss_file):
             missing_positions = [[int(x) for x in rec] for rec in csv.reader(f, delimiter=',')]
             missing_positions = np.array(missing_positions)
         miss_mask[missing_positions[:,0]-1,missing_positions[:,1]-1] = 0 #Indexes in the csv start at 1
-        
+    
     return data, types_dict, miss_mask, true_miss_mask, n_samples
 
 
