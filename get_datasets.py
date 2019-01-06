@@ -263,16 +263,20 @@ class dataset_folder():
         
         ## 1)Iterate X and target
         ## 2)Iterate columns and run encoders on ordinal and cat columns
-        ## 3)Insert in encoded_ds
+        ## 3)Concat encoded columns as (var_name,col_nr)
+        ## 3)Concat other columns and create multiindex of type (var_name,var_name)
+        ## 4)Insert in encoded_ds
         for (name,df) in ds_dic.items():
             df_encoded=pd.DataFrame()
             for col in df:
                 if encoded_ds['dtypes'][col]=='ordinal':
-                    df_encoded=pd.concat([df_encoded,thermo_encode(df[col])],axis=1)
+                    df_encoded=pd.concat([df_encoded,thermo_encode(df[col])],axis=1,levels=['variable','col_nr'])
                 elif encoded_ds['dtypes'][col]=='cat':
                     df_encoded=pd.concat([df_encoded,onehot_encode(df[col])],axis=1)
-                else:
-                    df_encoded=pd.concat([df_encoded,df[col]],axis=1)
+            if name!='target':
+                other_cols=df[encoded_ds['dtypes'].loc[(encoded_ds['dtypes'] != 'ordinal') & (encoded_ds['dtypes'] != 'cat')].index]
+                other_cols.columns=pd.MultiIndex.from_arrays([other_cols.columns,other_cols.columns])
+                df_encoded=pd.concat([df_encoded,other_cols],axis=1)
             if name=='X':
                 encoded_ds['test_X']=df_encoded.loc[orig_ds['test_X'].index]
                 encoded_ds['train_X']=df_encoded.loc[orig_ds['train_X'].index]
@@ -372,7 +376,7 @@ class dataset_folder():
 ####### Tests and example cals ######
         
 def credit_example():
-    credit=dataset_folder(dataset='credit',miss_strats=['MAR','MAR','MCAR'],miss_rates=0.5,n=10,train_ratio=0.9) 
+    credit=dataset_folder(dataset='credit',miss_strats=['MAR','MAR','MCAR'],miss_rates=0.5,n=2,train_ratio=0.9) 
     return credit
 
 def mnist_example():
