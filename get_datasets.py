@@ -4,6 +4,7 @@ from torchvision import datasets as tds
 import random
 import copy
 import time
+import os
 
 class dataset_folder():
     def __init__(self,dataset,miss_strats,miss_rates,n=1,target=None,train_ratio=None):
@@ -128,13 +129,18 @@ class dataset_folder():
     
     ##
     def load_MNIST(self):
+        script_dir = os.path.abspath(__file__)
+        (filedir, tail) = os.path.split(script_dir)
+        filename = 'datasets/MNIST'
+        abs_file_path_to_mnist = os.path.join(filedir, filename)
+
         ##Create data partitions
         train_part=[True,False]#tds modes for calling MNIST default partitions
         train_ratio=self.config_file['train_ratio']
         
         #Creating  default partitions
         for mode in train_part:
-            ds_mnist=tds.MNIST(root='datasets/MNIST',train=mode,download=True)
+            ds_mnist=tds.MNIST(root=abs_file_path_to_mnist,train=mode,download=True)
             if mode: #Train partition selected
                 X,target=ds_mnist.train_data[:],ds_mnist.train_labels[:]
                 train_X=pd.DataFrame(np.array([np.asarray(i).flatten() for i in X]),dtype=np.uint8)
@@ -173,8 +179,13 @@ class dataset_folder():
         return train_X,test_X,dtypes,train_target,test_target
     
     def load_credit(self):
+        script_dir = os.path.abspath(__file__)
+        (filedir, tail) = os.path.split(script_dir)
+        filename = 'datasets/default of credit card clients.xls'
+        abs_file_path = os.path.join(filedir, filename)
+
         #Import the dataset from excel
-        raw=pd.read_excel('datasets/default of credit card clients.xls',
+        raw=pd.read_excel(abs_file_path,
                           index_col='ID',
                           dtype='int64')
         
@@ -380,7 +391,7 @@ def credit_example():
     return credit
 
 def mnist_example():
-    mnist=dataset_folder(dataset='MNIST',miss_strats=['MAR','MAR','MCAR'],miss_rates=0.5,n=10)
+    mnist=dataset_folder(dataset='MNIST',miss_strats=['MAR','MAR','MCAR'],miss_rates=0.2,n=1)
     return mnist
 
 #Class call example
@@ -400,7 +411,7 @@ def test():
     mnist_orig_ds=mnist.orig_ds #get the original dataset with its partitions
     mnist_miss_masks=mnist.miss_masks #get the miss masks for the n folds
     mnist_corr_ds=mnist.ds_corruptor() #get the corrupted datasets from the mask matrixes
-    mnist_encoded_ds=mnist.encode_vars(mnist_orig_ds) 
+    mnist_encoded_ds=mnist.encode_vars(mnist_orig_ds)
     print("MNIST dataset example test completed in {:.2f} seconds.".format(time.time() - start_time))
     
 if __name__ == "__main__":

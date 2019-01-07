@@ -4,7 +4,7 @@
     "MissingRate": 30,
     "NumberOfApproaches": 1,
     "Approach1": "/home/cazevedo/deeplearning/VAEGAN/approaches/GAIN.py",
-    "Approach1Mode": "reconstruct",
+    "Approach1Mode": "train",
     "Approach2": "/home/cazevedo/deeplearning/VAEGAN/approaches/HI-VAE.py",
     "Approach2Mode": "train",
     "BaselineMethods": ["MostFrequent", "MeanImputation", "MICE"],

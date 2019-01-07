@@ -1,8 +1,14 @@
 import json
-import os
 import importlib.util
 import numpy as np
 from tqdm import tqdm
+import os, sys, inspect
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parentdir = os.path.dirname(currentdir)
+sys.path.insert(0,parentdir)
+sys.path.append('.')
+
+import get_datasets
 
 ### --------------------- DEBUG TOOLS -----------------------###
 from tensorflow.examples.tutorials.mnist import input_data
@@ -96,10 +102,28 @@ class ReconstructDataset(object):
 
     def run(self):
         # TODO change this for Francisco's implementation
-        original_dataset, incomplete_dataset, mask = get_dataset(mode='MCAR', n_samples=500)
+        # original_dataset, incomplete_dataset, mask = get_dataset(mode='MCAR', n_samples=500)
+    
+        mnist = get_datasets.mnist_example()
+        mnist_miss_masks = mnist.miss_masks  # get the miss masks for the n folds
+        mnist_corr_ds = mnist.ds_corruptor()  # get the corrupted datasets from the mask matrixes
+
+        config_idx = 0
+        incomplete_dataset = mnist_corr_ds['corr_X'][config_idx]['test_X']
+        mask = mnist_miss_masks[config_idx]['test_X']
+
+        # print(np.shape(incomplete_dataset_2))
+        # print(incomplete_dataset_2)
+        #
+        # print(np.shape(incomplete_dataset))
+        # print(incomplete_dataset)
+        #
+        # print(np.shape(mask))
+        # print(mask)
+        #
+        # sys.exit(0)
 
         r_datasets_paths = []
-
         # Reconstruct the dataset for each approach
         n_approaches = self.config.get("NumberOfApproaches")
         for i in range(n_approaches):
@@ -125,7 +149,7 @@ class ReconstructDataset(object):
 
             ## Print for DEBUG ##
             for i in tqdm(range(len(reconstructed_dataset))):
-                if i % 100 == 0:
+                if i % 1000 == 0:
                     inc = incomplete_dataset.loc[i].values
                     rec = reconstructed_dataset.loc[i].values
                     orig = original_dataset.loc[i].values
@@ -153,7 +177,7 @@ class ReconstructDataset(object):
 
             ## Print for DEBUG ##
             for i in tqdm(range(len(reconstructed_dataset))):
-                if i % 100 == 0:
+                if i % 1000 == 0:
                     inc = incomplete_dataset.loc[i].values
                     rec = reconstructed_dataset.loc[i].values
                     orig = original_dataset.loc[i].values
