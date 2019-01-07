@@ -4,35 +4,45 @@ from tqdm import tqdm
 
 # Mean imputation method that uses the mean of each row as imputation of the missing values
 # (suitable for images datasets)
-def reconstruct(dataset, mask):
+def reconstruct(dataset, config_idx):
     print('Reconstructing using Mean Imputation...')
-    (datasetLen, dim) = np.shape(dataset)
 
-    incomplete_dataset = pd.DataFrame(dataset.copy())
+    train_data = dataset.orig_ds['train_X']
+    mask = dataset.miss_masks[config_idx]['train_X']
+
+    (datasetLen, dim) = np.shape(train_data)
+
+    incomplete_dataset = pd.DataFrame(train_data.copy())
     reconstructed_dataset = pd.DataFrame(np.zeros((datasetLen, dim)))
 
     for i in tqdm(range(datasetLen)):
         frame = incomplete_dataset.loc[i, :]
         mean = frame.mean()
         ms = mask.loc[i, :]
-        frame.values[ms.values == 0] = mean
+        frame.values[ms.values==0] = mean
         reconstructed_dataset.loc[i, :] = frame.values
 
     return reconstructed_dataset
 
 # Mean imputation method that uses the mean of each column as imputation of the missing values
 # (suitable for tabular datasets)
+
+# TODO copy changes needed from reconstruct()
 def reconstruct_tabular(dataset, mask):
     print('Reconstructing using Most Frequent...')
-    (datasetLen, dim) = np.shape(dataset)
 
-    incomplete_dataset = pd.DataFrame(dataset.copy())
+    train_data = dataset.orig_ds['train_X']
+    mask = dataset.miss_masks[config_idx]['train_X']
+    
+    (datasetLen, dim) = np.shape(train_data)
+
+    incomplete_dataset = pd.DataFrame(train_data.copy())
     reconstructed_dataset = pd.DataFrame(np.zeros((datasetLen, dim)))
 
     for i in tqdm(range(dim)):
         frame = incomplete_dataset.loc[:, i]
         mean = frame.mean()
-        ms = mask.loc[:, i]
+        ms = mask[i]
         frame.values[ms.index[ms == 0]] = mean
         reconstructed_dataset.loc[:, i] = frame.values
 
