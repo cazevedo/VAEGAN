@@ -29,10 +29,23 @@ def from_custom(dataset, config_idx):
     # Construct types from custom dataset
     custom_types = dataset.orig_ds['dtypes']
     custom_data = dataset.orig_ds['train_X']
+    custom_data = pd.concat(
+        [custom_data,
+        dataset.orig_ds['train_target']],
+        axis=1
+    )
+
+    n_samples = len(custom_data)
+
+    # miss_mask = dataset.miss_masks[config_idx]['train_X']
 
     miss_mask = dataset.miss_masks[config_idx]['train_X']
+    output_miss = pd.DataFrame(np.ones(n_samples))
+    miss_mask['output'] = output_miss.values
 
-    encoded_dataset = dataset.encode_vars(dataset.orig_ds)['train_X']
+
+    encoded_dataset = dataset.encode_vars(dataset.orig_ds)
+    encoded_dataset = pd.concat([encoded_dataset['train_X'], encoded_dataset['train_target']], axis=1)
     types_dict = []
 
     for name, dtype in custom_types.items():
@@ -62,8 +75,6 @@ def from_custom(dataset, config_idx):
             raise NotImplementedError(dtype)
 
     print(types_dict)
-
-    n_samples = len(custom_data)
 
     # TODO implement for other datasets if needed
     true_miss_mask = np.ones([n_samples,len(types_dict)])

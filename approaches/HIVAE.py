@@ -70,8 +70,6 @@ def train(args, train_data, types_dict, miss_mask, true_miss_mask, n_samples):
 	            miss_mask_aux = miss_mask[random_perm,:]
 	            true_miss_mask_aux = true_miss_mask[random_perm,:]
 
-	            # import pdb; pdb.set_trace()
-
 	            for i in range(n_batches):
 
 	                #Create inputs for the feed_dict
@@ -88,6 +86,7 @@ def train(args, train_data, types_dict, miss_mask, true_miss_mask, n_samples):
 	                
 	                #Running VAE
 	                print("before run")
+	                # import pdb; pdb.set_trace()
 	                _,loss,KL_z,KL_s,samples,log_p_x,log_p_x_missing,p_params,q_params  = session.run([tf_nodes['optim'], tf_nodes['loss_re'], tf_nodes['KL_z'], tf_nodes['KL_s'], tf_nodes['samples'],
 	                                                         tf_nodes['log_p_x'], tf_nodes['log_p_x_missing'],tf_nodes['p_params'],tf_nodes['q_params']],
 	                                                         feed_dict=feedDict)

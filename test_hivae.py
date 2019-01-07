@@ -1,5 +1,5 @@
 import os
-from get_datasets import credit_example, mnist_example
+from get_datasets import dataset_folder
 from approaches import HIVAE
 from approaches.libHIVAE import parser_arguments, read_functions
 from approaches.libHIVAE import main as old_hivae
@@ -9,7 +9,7 @@ if __name__ == "__main__":
     # old_hivae.run()
 
     settings = '--epochs 100 --model_name model_HIVAE_inputDropout --restore 0 --train 1 \
-                --batch_size 1000 --save 1001 --save_file model_test\
+                --batch_size 1 --save 1001 --save_file model_test\
                 --dim_latent_s 10 --dim_latent_z 10 --dim_latent_y 5'
 
     argvals = settings.split()
@@ -23,8 +23,12 @@ if __name__ == "__main__":
     network_file_name='./Saved_Networks/' + args.save_file + '/' + args.save_file +'.ckpt'
     log_file_name='./Saved_Network/' + args.save_file + '/log_file_' + args.save_file +'.txt'
 
-    dataset = credit_example()
-    # dataset = mnist_example()
+    dataset = dataset_folder(
+        dataset='credit',
+        miss_strats=['MCAR'],
+        miss_rates=0.5,
+        n=2,
+        train_ratio=0.001) 
     config_idx = 0
 
     # Transform given dataset to the format we need
