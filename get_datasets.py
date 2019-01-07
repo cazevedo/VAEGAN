@@ -392,7 +392,7 @@ def test():
     credit_miss_masks=credit.miss_masks #get the miss masks for the n folds
     credit_corr_ds=credit.ds_corruptor() #get the corrupted datasets from the mask matrixes
     credit_encoded_ds=credit.encode_vars(credit_orig_ds)  
-    print("Credit dataset example test completed in {%.1f} seconds.".format(time.time() - start_time))
+    print("Credit dataset example test completed in {:.2f} seconds.".format(time.time() - start_time))
 
     start_time = time.time()
     ##MNIST dataset
@@ -401,7 +401,7 @@ def test():
     mnist_miss_masks=mnist.miss_masks #get the miss masks for the n folds
     mnist_corr_ds=mnist.ds_corruptor() #get the corrupted datasets from the mask matrixes
     mnist_encoded_ds=mnist.encode_vars(mnist_orig_ds) 
-    print("MNIST dataset example test completed in {%.1f} seconds.".format(time.time() - start_time))
+    print("MNIST dataset example test completed in {:.2f} seconds.".format(time.time() - start_time))
     
 if __name__ == "__main__":
      test()
