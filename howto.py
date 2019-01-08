@@ -1,5 +1,5 @@
 # Config
-approach = "mean"
+approach = "MICE"
 dataset_name = "MNIST"
 miss_strats = ['MCAR'] # ['MAR','MAR','MCAR']
 one_strat = miss_strats[0]
@@ -9,7 +9,7 @@ train_ratio = 0.9
 
 # Getting a dataset
 from get_datasets import dataset_folder
-original=dataset_folder(
+dataset=dataset_folder(
 	dataset=dataset_name,
 	miss_strats=miss_strats,
 	miss_rates=missing_ratio,
@@ -18,25 +18,31 @@ original=dataset_folder(
 )
 
 # Fix the indices from splitting train/test
-original.orig_ds['train_X'].reset_index(inplace=True)
+dataset.orig_ds['train_X'].reset_index(inplace=True)
 for i in range(N):
-	original.miss_masks[i]['train_X'].reset_index(inplace=True)
+	dataset.miss_masks[i]['train_X'].reset_index(inplace=True)
 
 # Select a config index
 config_idx = 0 # up to n-1 from above
 
 # For testing purposes
 test_len = 20
-original.orig_ds['train_X'] = original.orig_ds['train_X'].loc[:test_len, :]
-original.miss_masks[config_idx]['train_X'] = original.miss_masks[config_idx]['train_X'].loc[:test_len, :]
+dataset.orig_ds['train_X'] = dataset.orig_ds['train_X'].loc[:test_len, :]
+dataset.miss_masks[config_idx]['train_X'] = dataset.miss_masks[config_idx]['train_X'].loc[:test_len, :]
 
 if approach == "mean":
 	from approaches import MeanImputation
-	reconstructed = MeanImputation.reconstruct(original, config_idx)
+	reconstructed = MeanImputation.reconstruct(dataset, config_idx)
+elif approach == "frequent":
+	from approaches import MostFrequent
+	reconstructed = MostFrequent.reconstruct(dataset, config_idx)
+elif approach == "MICE":
+	from approaches import MICE
+	reconstructed = MICE.reconstruct(dataset, config_idx)
 else:
 	raise NotImplementedError(approach)
 
-# Save the reconstructed and original
+# Save the original dataset and reconstructed
 import pickle
 fn_fmt = "{approach}_{dataset}_{missing_ratio}_{missing_mechanism}_{n}.pkl"
 fn = fn_fmt.format(
@@ -47,4 +53,4 @@ fn = fn_fmt.format(
 	n=config_idx
 )
 with open("results/"+fn, "wb") as f:
-	pickle.dump((original, reconstructed), f)
+	pickle.dump((dataset, reconstructed), f)

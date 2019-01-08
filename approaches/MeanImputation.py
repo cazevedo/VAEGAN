@@ -19,32 +19,8 @@ def reconstruct(dataset, config_idx):
         frame = incomplete_dataset.loc[i, :]
         mean = frame.mean()
         ms = mask.loc[i, :]
-        frame.values[ms.values==0] = mean
+        frame.values[ms.values == 0] = mean
         reconstructed_dataset.loc[i, :] = frame.values
-
-    return reconstructed_dataset
-
-# Mean imputation method that uses the mean of each column as imputation of the missing values
-# (suitable for tabular datasets)
-
-# TODO copy changes needed from reconstruct()
-def reconstruct_tabular(dataset, mask):
-    print('Reconstructing using Most Frequent...')
-
-    train_data = dataset.orig_ds['train_X']
-    mask = dataset.miss_masks[config_idx]['train_X']
-    
-    (datasetLen, dim) = np.shape(train_data)
-
-    incomplete_dataset = pd.DataFrame(train_data.copy())
-    reconstructed_dataset = pd.DataFrame(np.zeros((datasetLen, dim)))
-
-    for i in tqdm(range(dim)):
-        frame = incomplete_dataset.loc[:, i]
-        mean = frame.mean()
-        ms = mask[i]
-        frame.values[ms.index[ms == 0]] = mean
-        reconstructed_dataset.loc[:, i] = frame.values
 
     return reconstructed_dataset
 
