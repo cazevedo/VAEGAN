@@ -19,7 +19,6 @@ import os
 from tqdm import tqdm
 import pandas as pd
 
-
 filename = 'model.ckpt'
 
 # Mask Vector and Hint Vector Generation

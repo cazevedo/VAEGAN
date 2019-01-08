@@ -7,7 +7,6 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir)
 sys.path.append('.')
-
 import get_datasets
 
 ### --------------------- DEBUG TOOLS -----------------------###
@@ -101,83 +100,108 @@ class ReconstructDataset(object):
         self.datasets_dir_path = os.path.join(projectdir, dir_name)
 
     def run(self):
-        # TODO change this for Francisco's implementation
-        # original_dataset, incomplete_dataset, mask = get_dataset(mode='MCAR', n_samples=500)
+        datasets = self.config.get("Dataset")
+        missing_mechanisms = self.config.get("MissingnessMechanism")
+        missing_rates = self.config.get("MissingRate")
 
-        mnist = get_datasets.dataset_folder(dataset='MNIST', miss_strats=['MCAR'], miss_rates=0.5, n=1)
-        mnist_orig_ds = mnist.orig_ds  # get the original dataset with its partitions
-        mnist_miss_masks = mnist.miss_masks  # get the miss masks for the n folds
-        mnist_corr_ds = mnist.ds_corruptor()  # get the corrupted datasets from the mask matrixes
+        r_datasets_paths = [] # list where all the paths of the reconstructed datasets will be stored
 
-        config_idx = 0
-        incomplete_dataset = mnist_corr_ds['corr_X'][config_idx]['test_X']
-        mask = mnist_miss_masks[config_idx]['test_X']
-        original_dataset = mnist_orig_ds['test_X']
+        for dataset in datasets:
+            custom_dataset = get_datasets.dataset_folder(dataset=dataset, miss_strats=missing_mechanisms, miss_rates=missing_rates, n=len(missing_mechanisms))
 
-        r_datasets_paths = []
-        # Reconstruct the dataset for each approach
-        n_approaches = self.config.get("NumberOfApproaches")
-        for i in range(n_approaches):
-            # get the path of the approach to be compared
-            approach_path = self.config.get("Approach"+str(i+1))
-            spec = importlib.util.spec_from_file_location("approach", approach_path)
-            appch = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(appch)
+            for config_idx in range(len(missing_mechanisms)):
+                print(config_idx)
+                mnist_orig_ds = custom_dataset.orig_ds  # get the original dataset with its partitions
+                mnist_miss_masks = custom_dataset.miss_masks  # get the miss masks for the n folds
+                mnist_corr_ds = custom_dataset.ds_corruptor()  # get the corrupted datasets from the mask matrixes
 
-            # execution mode
-            mode = self.config.get("Approach"+str(i+1)+"Mode")
+                incomplete_dataset = mnist_corr_ds['corr_X'][config_idx]['train_X']
+                mask = mnist_miss_masks[config_idx]['train_X']
+                original_dataset = mnist_orig_ds['train_X']
 
-            if mode == 'train':
-                appch.train(incomplete_dataset, mask)
-                reconstructed_dataset = appch.reconstruct(incomplete_dataset, mask)
-            elif mode == 'reconstruct':
-                reconstructed_dataset = appch.reconstruct(incomplete_dataset, mask)
+                # Reconstruct the dataset for each approach
+                approaches = self.config.get("Approaches")
+                approaches_mode = self.config.get("ApproachesMode")
+                for app_index, app_path in enumerate(approaches):
+                    # get the path of the approach to be compared
+                    spec = importlib.util.spec_from_file_location("approach", app_path)
+                    appch = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(appch)
 
-            # save the reconstructed dataset in datasets folder
-            file_name = self.datasets_dir_path+"/Approach"+str(i+1)+"_rd"
-            reconstructed_dataset.to_pickle(file_name)
-            r_datasets_paths.append(file_name)
+                    if approaches_mode[app_index] == 'train':
+                        appch.train(incomplete_dataset, mask)
+                        reconstructed_dataset = appch.reconstruct(incomplete_dataset, mask)
+                    elif approaches_mode[app_index] == 'reconstruct':
+                        reconstructed_dataset = appch.reconstruct(incomplete_dataset, mask)
 
-            ## Print for DEBUG ##
-            for i in tqdm(range(len(reconstructed_dataset))):
-                if i % 1000 == 0:
-                    inc = incomplete_dataset.loc[i].values
-                    rec = reconstructed_dataset.loc[i].values
-                    orig = original_dataset.loc[i].values
+                    # save the reconstructed dataset in datasets folder
+                    fn_fmt = "/{dataset}_{approach}_{missing_mechanism}_{missing_ratio}.pkl"
+                    # get the approach name
+                    (filedir, app_name) = os.path.split(app_path)
+                    app_name = app_name.split('.')[0]
+                    file_name = fn_fmt.format(
+                        dataset=dataset,
+                        approach=app_name,
+                        missing_mechanism=missing_mechanisms[config_idx],
+                        missing_ratio=missing_rates[config_idx]
+                    )
+                    file_name = self.datasets_dir_path+file_name
+                    print(file_name)
 
-                    samples = np.vstack([inc, rec, orig])
-                    fig = plot(samples)
-                    plt.savefig('Multiple_Impute_out1/app{}.png'.format(str(i).zfill(3)), bbox_inches='tight')
-                    plt.close(fig)
-            ## ----- ##
+                    reconstructed_dataset.to_pickle(file_name)
+                    r_datasets_paths.append(file_name)
 
-        # Reconstruct the dataset for each baseline method
-        baseline = self.config.get("BaselineMethods")
-        for method in baseline:
-            method_path = self.filedir+'/'+method+'.py'
-            spec = importlib.util.spec_from_file_location("method", method_path)
-            mthd = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(mthd)
+                    # ## Print for DEBUG ##
+                    # for i in tqdm(range(len(reconstructed_dataset))):
+                    #     if i % 10000 == 0:
+                    #         inc = incomplete_dataset.loc[i].values
+                    #         rec = reconstructed_dataset.loc[i].values
+                    #         orig = original_dataset.loc[i].values
+                    #
+                    #         samples = np.vstack([inc, rec, orig])
+                    #         fig = plot(samples)
+                    #         plt.savefig('Multiple_Impute_out1/app{}.png'.format(str(i).zfill(3)), bbox_inches='tight')
+                    #         plt.close(fig)
+                    # ## ----- ##
 
-            reconstructed_dataset = mthd.reconstruct(incomplete_dataset, mask)
+                #Reconstruct the dataset for each baseline method
+                baseline = self.config.get("BaselineMethods")
+                for method in baseline:
+                    method_path = self.filedir+'/'+method+'.py'
+                    spec = importlib.util.spec_from_file_location("method", method_path)
+                    mthd = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(mthd)
 
-            # save the reconstructed dataset in datasets folder
-            file_name = self.datasets_dir_path+'/'+method+'_rd'
-            reconstructed_dataset.to_pickle(file_name)
-            r_datasets_paths.append(file_name)
+                    reconstructed_dataset = mthd.reconstruct(custom_dataset, config_idx)
 
-            ## Print for DEBUG ##
-            for i in tqdm(range(len(reconstructed_dataset))):
-                if i % 1000 == 0:
-                    inc = incomplete_dataset.loc[i].values
-                    rec = reconstructed_dataset.loc[i].values
-                    orig = original_dataset.loc[i].values
+                    # save the reconstructed dataset in datasets folder
+                    file_name = self.datasets_dir_path+'/'+method+'_rd'
 
-                    samples = np.vstack([inc, rec, orig])
-                    fig = plot(samples)
-                    plt.savefig('Multiple_Impute_out1/{}{}.png'.format(str(i).zfill(3), method), bbox_inches='tight')
-                    plt.close(fig)
-            ## ----- ##
+                    # save the reconstructed dataset in datasets folder
+                    fn_fmt = "/{dataset}_{approach}_{missing_mechanism}_{missing_ratio}.pkl"
+                    file_name = fn_fmt.format(
+                        dataset=dataset,
+                        approach=method,
+                        missing_mechanism=missing_mechanisms[config_idx],
+                        missing_ratio=missing_rates[config_idx]
+                    )
+                    file_name = self.datasets_dir_path + file_name
+
+                    reconstructed_dataset.to_pickle(file_name)
+                    r_datasets_paths.append(file_name)
+
+                    # ## Print for DEBUG ##
+                    # for i in tqdm(range(len(reconstructed_dataset))):
+                    #     if i % 10000 == 0:
+                    #         inc = incomplete_dataset.loc[i].values
+                    #         rec = reconstructed_dataset.loc[i].values
+                    #         orig = original_dataset.loc[i].values
+                    #
+                    #         samples = np.vstack([inc, rec, orig])
+                    #         fig = plot(samples)
+                    #         plt.savefig('Multiple_Impute_out1/{}{}.png'.format(str(i).zfill(3), method), bbox_inches='tight')
+                    #         plt.close(fig)
+                    # ## ----- ##
 
         return r_datasets_paths
 
