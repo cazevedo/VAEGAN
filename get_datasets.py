@@ -117,6 +117,8 @@ class dataset_folder():
         if type(dataset)==str:
             if dataset in supported_datasets:
                 train_X,test_X,dtypes,train_target,test_target=supported_datasets[dataset]()
+            else:
+                raise NotImplementedError("{} not a supported dataset {}".format(dataset, list(supported_datasets.keys())))
                 
         orig_ds={
                 'train_X':train_X,
