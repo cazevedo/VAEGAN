@@ -1,8 +1,8 @@
 # Config
-approach = "MICE"
+approach = "mean"
 dataset_name = "MNIST"
 miss_strats = ['MCAR'] # ['MAR','MAR','MCAR']
-one_strat = miss_strats[0]
+mechanism = miss_strats[0]
 missing_ratio = 0.5
 N = 2
 train_ratio = 0.9
@@ -26,9 +26,9 @@ for i in range(N):
 config_idx = 0 # up to n-1 from above
 
 # For testing purposes
-test_len = 20
-dataset.orig_ds['train_X'] = dataset.orig_ds['train_X'].loc[:test_len, :]
-dataset.miss_masks[config_idx]['train_X'] = dataset.miss_masks[config_idx]['train_X'].loc[:test_len, :]
+# test_len = 20
+# dataset.orig_ds['train_X'] = dataset.orig_ds['train_X'].loc[:test_len, :]
+# dataset.miss_masks[config_idx]['train_X'] = dataset.miss_masks[config_idx]['train_X'].loc[:test_len, :]
 
 if approach == "mean":
 	from approaches import MeanImputation
@@ -44,13 +44,22 @@ else:
 
 # Save the original dataset and reconstructed
 import pickle
-fn_fmt = "{approach}_{dataset}_{missing_ratio}_{missing_mechanism}_{n}.pkl"
-fn = fn_fmt.format(
-	approach=approach,
+
+fn_org = "{dataset}_{train_ratio}.pkl".format(
 	dataset=dataset_name,
+	train_ratio=train_ratio
+)
+with open("results/"+fn_org, "wb") as f:
+	pickle.dump((dataset.orig_ds['train_X'], dataset.orig_ds['test_X'], dataset_name, train_ratio), f)
+
+fn_fmt = "{dataset}_{approach}_{missing_mechanism}_{missing_ratio}_{n}.pkl"
+fn = fn_fmt.format(
+	dataset=dataset_name,
+	approach=approach,
+	missing_mechanism=mechanism,
 	missing_ratio=missing_ratio,
-	missing_mechanism=one_strat,
 	n=config_idx
 )
+
 with open("results/"+fn, "wb") as f:
-	pickle.dump((dataset, reconstructed), f)
+	pickle.dump((reconstructed, dataset_name, approach, mechanism, missing_ratio, config_idx), f)
