@@ -5,7 +5,6 @@ miss_strats = ['MCAR'] # ['MAR','MAR','MCAR']
 mechanism = miss_strats[0]
 missing_ratio = 0.5
 N = 2
-train_ratio = 0.9
 
 # Getting a dataset
 from get_datasets import dataset_folder
@@ -14,7 +13,6 @@ dataset=dataset_folder(
 	miss_strats=miss_strats,
 	miss_rates=missing_ratio,
 	n=N,
-	train_ratio=train_ratio
 )
 
 # Fix the indices from splitting train/test
@@ -45,12 +43,11 @@ else:
 # Save the original dataset and reconstructed
 import pickle
 
-fn_org = "{dataset}_{train_ratio}.pkl".format(
+fn_org = "{dataset}.pkl".format(
 	dataset=dataset_name,
-	train_ratio=train_ratio
 )
 with open("results/"+fn_org, "wb") as f:
-	pickle.dump((dataset.orig_ds['train_X'], dataset.orig_ds['test_X'], dataset_name, train_ratio), f)
+	pickle.dump((dataset.orig_ds['train_X'], dataset.orig_ds['test_X'], dataset_name), f)
 
 fn_fmt = "{dataset}_{approach}_{missing_mechanism}_{missing_ratio}_{n}.pkl"
 fn = fn_fmt.format(
