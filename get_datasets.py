@@ -243,6 +243,12 @@ class dataset_folder():
         train_X = train_X[ ['LIMIT_BAL','PAY_AMT1','PAY_AMT2','PAY_AMT3', 'PAY_AMT4','PAY_AMT5','PAY_AMT6', 'BILL_AMT1','BILL_AMT2','BILL_AMT3','BILL_AMT4','BILL_AMT5','BILL_AMT6'] ]
         test_X = test_X[ ['LIMIT_BAL','PAY_AMT1','PAY_AMT2','PAY_AMT3', 'PAY_AMT4','PAY_AMT5','PAY_AMT6', 'BILL_AMT1','BILL_AMT2','BILL_AMT3','BILL_AMT4','BILL_AMT5','BILL_AMT6'] ]
 
+        def normalize(df):
+            return (df-df.min())/(df.max()-df.min())
+
+        train_X = normalize(train_X)
+        test_X = normalize(test_X)
+
         #get dtypes series
         dtypes=raw.dtypes
         for (key, value) in variables.items():
