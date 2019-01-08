@@ -2,7 +2,6 @@
     "Dataset": ["MNIST"],
     "MissingnessMechanism": ["MCAR", "MAR"],
     "MissingRate": [0.5, 0.2],
-    "NumberOfApproaches": 2,
     "Approaches": [ "/home/cazevedo/deeplearning/VAEGAN/approaches/GAIN.py",
                     "/home/cazevedo/deeplearning/VAEGAN/approaches/GAIN.py"
                   ],
