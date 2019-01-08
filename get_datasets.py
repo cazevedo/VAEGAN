@@ -383,6 +383,7 @@ class dataset_folder():
                 dataframe=self.orig_ds[partition]
                 # corr_ds['corr_X'][i][partition]=mask_matrix.where(mask_matrix==1,np.nan).mask(mask_matrix==1,dataframe)
                 corr_ds['corr_X'][i][partition]=mask_matrix.where(mask_matrix==1,np.random.rand()).mask(mask_matrix==1,dataframe)
+                # corr_ds['corr_X'][i][partition]=mask_matrix.where(mask_matrix==1, 0.5).mask(mask_matrix==1,dataframe)
         return corr_ds
 
 ####### Tests and example cals ######
