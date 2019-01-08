@@ -103,25 +103,16 @@ class ReconstructDataset(object):
     def run(self):
         # TODO change this for Francisco's implementation
         # original_dataset, incomplete_dataset, mask = get_dataset(mode='MCAR', n_samples=500)
-    
-        mnist = get_datasets.mnist_example()
+
+        mnist = get_datasets.dataset_folder(dataset='MNIST', miss_strats=['MCAR'], miss_rates=0.5, n=1)
+        mnist_orig_ds = mnist.orig_ds  # get the original dataset with its partitions
         mnist_miss_masks = mnist.miss_masks  # get the miss masks for the n folds
         mnist_corr_ds = mnist.ds_corruptor()  # get the corrupted datasets from the mask matrixes
 
         config_idx = 0
         incomplete_dataset = mnist_corr_ds['corr_X'][config_idx]['test_X']
         mask = mnist_miss_masks[config_idx]['test_X']
-
-        # print(np.shape(incomplete_dataset_2))
-        # print(incomplete_dataset_2)
-        #
-        # print(np.shape(incomplete_dataset))
-        # print(incomplete_dataset)
-        #
-        # print(np.shape(mask))
-        # print(mask)
-        #
-        # sys.exit(0)
+        original_dataset = mnist_orig_ds['test_X']
 
         r_datasets_paths = []
         # Reconstruct the dataset for each approach
