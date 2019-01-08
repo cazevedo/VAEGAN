@@ -1,0 +1,2 @@
+model_checkpoint_path: "/home/cazevedo/deeplearning/VAEGAN/approaches/model.ckpt"
+all_model_checkpoint_paths: "/home/cazevedo/deeplearning/VAEGAN/approaches/model.ckpt"

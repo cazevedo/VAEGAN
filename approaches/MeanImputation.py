@@ -4,23 +4,22 @@ from tqdm import tqdm
 
 # Mean imputation method that uses the mean of each row as imputation of the missing values
 # (suitable for images datasets)
-def reconstruct(dataset, config_idx):
+def reconstruct(dataset, mask):
     print('Reconstructing using Mean Imputation...')
 
-    train_data = dataset.orig_ds['train_X']
-    mask = dataset.miss_masks[config_idx]['train_X']
+    (datasetLen, dim) = np.shape(dataset)
 
-    (datasetLen, dim) = np.shape(train_data)
-
-    incomplete_dataset = pd.DataFrame(train_data.copy())
+    incomplete_dataset = dataset.copy()
     reconstructed_dataset = pd.DataFrame(np.zeros((datasetLen, dim)))
 
     for i in tqdm(range(dim)):
-        frame = incomplete_dataset.loc[:, i]
-        mean = frame.mean()
-        ms = mask.loc[:, i]
-        frame.values[ms.index[ms == 0]] = mean
-        reconstructed_dataset.loc[:, i] = frame.values
+        # print(incomplete_dataset)
+        frame = incomplete_dataset.iloc[:, i]
+        most_frequent = frame.mean()
+        ms = mask.iloc[:, i]
+
+        frame.values[ms.index[ms == 0]] = most_frequent
+        reconstructed_dataset.iloc[:, i] = frame.values
 
     return reconstructed_dataset
 

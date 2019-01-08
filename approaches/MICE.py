@@ -3,13 +3,14 @@ from tqdm import tqdm
 import pandas as pd
 from fancyimpute import IterativeImputer
 
-def reconstruct(dataset, config_idx):
+def reconstruct(dataset, mask):
     print('Reconstructing using MICE...')
 
-    train_data = dataset.orig_ds['train_X']
-    mask = dataset.miss_masks[config_idx]['train_X']
+    # train_data = dataset.orig_ds['train_X']
+    # mask = dataset.miss_masks[config_idx]['train_X']
 
-    (datasetLen, dim) = np.shape(train_data)
+    (datasetLen, dim) = np.shape(dataset)
+    train_data = dataset.copy()
     incomplete_dataset = np.zeros((datasetLen, dim))
 
     # IterativeImputer requires corrupted entries to be identified as NaN

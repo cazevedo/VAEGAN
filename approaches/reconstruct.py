@@ -126,7 +126,7 @@ class ReconstructDataset(object):
                     mthd = importlib.util.module_from_spec(spec)
                     spec.loader.exec_module(mthd)
 
-                    reconstructed_dataset = mthd.reconstruct(custom_dataset, config_idx)
+                    reconstructed_dataset = mthd.reconstruct(incomplete_dataset, mask)
 
                     # save the reconstructed dataset in datasets folder
                     fn_fmt = "/{dataset}_{approach}_{missing_mechanism}_{missing_ratio}_{run_index}.pkl"

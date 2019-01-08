@@ -6,7 +6,7 @@
     "Approaches": [ "/home/cazevedo/deeplearning/VAEGAN/approaches/GAINCredit.py"
                   ],
     "ApproachesMode": ["train"],
-    "BaselineMethods": ["MeanImputation", "MostFrequent", "MICE", "MissForest"],
+    "BaselineMethods": ["MostFrequent", "MeanImputation", "MICE", "MissForest"],
     "DownstreamTask": "/performance_eval/dnn_classifier.py",
     "DownstreamMetrics": ["Accuracy"],
     "ImputationMetrics": ["NRMSE", "AccuracyError"]

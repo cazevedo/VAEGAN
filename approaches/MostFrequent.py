@@ -4,24 +4,22 @@ from tqdm import tqdm
 
 # Most frequent imputation method that uses the most frequent element of each row
 # as imputation of the missing values (suitable for images datasets)
-def reconstruct(dataset, config_idx):
+def reconstruct(dataset, mask):
     print('Reconstructing using Most Frequent...')
 
-    train_data = dataset.orig_ds['train_X']
-    mask = dataset.miss_masks[config_idx]['train_X']
+    (datasetLen, dim) = np.shape(dataset)
 
-    (datasetLen, dim) = np.shape(train_data)
-
-    incomplete_dataset = pd.DataFrame(train_data.copy())
+    incomplete_dataset = dataset.copy()
     reconstructed_dataset = pd.DataFrame(np.zeros((datasetLen, dim)))
 
     for i in tqdm(range(dim)):
-        frame = incomplete_dataset.loc[:, i]
+        # print(incomplete_dataset)
+        frame = incomplete_dataset.iloc[:, i]
         most_frequent = frame.mode()[0]
-        ms = mask.loc[:, i]
+        ms = mask.iloc[:, i]
 
         frame.values[ms.index[ms == 0]] = most_frequent
-        reconstructed_dataset.loc[:, i] = frame.values
+        reconstructed_dataset.iloc[:, i] = frame.values
 
     return reconstructed_dataset
 
