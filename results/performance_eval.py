@@ -1,7 +1,21 @@
 import pickle
 import numpy as np
+from sys import argv, exit
 
-def nrmse(original_dataset, reconstructed_dataset):
+def get_original(filename):
+    orig, _, _ = pickle.load(open(filename, "rb"))
+    return orig
+
+def get_reconstructed(filename):
+    dataset_name, approach, mechanism, missing_ratio, n = filename.split('.pkl')[0].split('_')
+    missing_ratio = float(missing_ratio)
+
+    rec = pickle.load(open(filename, "rb"))
+
+    return rec, missing_ratio    
+
+
+def nrmse(original_dataset, reconstructed_dataset, missing_ratio):
     """
     input:
         - original dataset: pandas dataframe
@@ -9,13 +23,11 @@ def nrmse(original_dataset, reconstructed_dataset):
     output:
         - NRMSE between the 2 datasets
     """
-    x = original_dataset[0].values
-    r = reconstructed_dataset[0].values
+    x = original_dataset.values
+    r = reconstructed_dataset.values
     
     x_max = x.max()
     x_min = x.min()
-    
-    missing_ratio = reconstructed_dataset[4]
 
     # TODO size of missing mask??  
     print(r.shape)
@@ -27,28 +39,31 @@ def nrmse(original_dataset, reconstructed_dataset):
 def evaluate_approach(original_dataset, reconstructed_datasets):
     """
     input:
-        - original dataset: pandas dataframe
-        - list of reconstructed dataset: list of pandas dataframes
+        - original dataset: string filename
+        - list of reconstructed dataset: list of filenames
     output:
         - mean of nrmse
         - variance of nrmse
     
     """
     
-    nrmses = [nrmse(original_dataset, r) for r in reconstructed_datasets]
+    orig = get_original(original_dataset)
+
+    nrmses = [nrmse(orig, *get_reconstructed(r)) for r in reconstructed_datasets]
     
     return nrmses, np.mean(nrmses), np.std(nrmses)
-    
-    
-orig = pickle.load(open("MNIST.pkl", "rb"))
-
-# reconstructed = [pickle.load(open("MNIST_MeanImputation_MCAR_0.1_0.pkl", "rb"))]
-
-#reconstructed.append(pickle.load(open("MNIST_MostFrequent_MCAR_0.1_0.pkl", "rb")))
 
 
-#reconstructed = []
-#for i in range(2):
-#        reconstructed.append(pickle.load(open("MNIST_mean_MCAR_0.5_"+str(i)+".pkl", "rb")))
-        
-#evaluate_approach(orig, reconstructed)
+if __name__ == "__main__":
+
+    if len(argv) < 3:
+        print("Usage: {} ORIGINAL.pkl RECONSTRUCTED.pkl".format(argv[0]))
+        exit()
+
+    orig = get_original(argv[1])
+
+    rec, missing_ratio = get_reconstructed(argv[2])
+
+    stat = nrmse(orig, rec, missing_ratio)
+
+    print("{} - NRMSE - {}".format(argv[2], stat))
