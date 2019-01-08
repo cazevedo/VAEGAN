@@ -231,8 +231,8 @@ class dataset_folder():
 
         # Force not random
         test_sep = int(len(raw)*train_ratio)
-        test_index = list(range(0, test_sep))
-        train_index = list(range(test_sep, len(raw)))
+        train_index = list(range(0, test_sep))
+        test_index = list(range(test_sep, len(raw)))
 
         #splits
         train_X=raw.loc[train_index, raw.columns != variables['target']]
