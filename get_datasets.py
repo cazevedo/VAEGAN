@@ -128,7 +128,7 @@ class dataset_folder():
         return orig_ds
     
     ##
-    def load_MNIST(self):
+    def load_MNIST(self, normalized=True):
         script_dir = os.path.abspath(__file__)
         (filedir, tail) = os.path.split(script_dir)
         filename = 'datasets/MNIST'
@@ -175,6 +175,10 @@ class dataset_folder():
                 dtypes.loc[index]='count'
             else:
                 dtypes.loc[index]='cat'
+
+        # Normalize
+        train_X = train_X / 255.0
+        test_X = test_X / 255.0
 
         return train_X,test_X,dtypes,train_target,test_target
     
