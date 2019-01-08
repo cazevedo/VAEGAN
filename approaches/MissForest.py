@@ -22,7 +22,7 @@ def reconstruct(dataset, config_idx):
 
     incomplete_dataset = pd.DataFrame(incomplete_dataset)
 
-    imputer = MissForest(max_iter=1, verbose=1)
+    imputer = MissForest(max_iter=5, verbose=0)
     reconstructed_dataset = imputer.fit_transform(incomplete_dataset)
 
     print(np.shape(reconstructed_dataset))

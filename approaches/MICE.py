@@ -27,7 +27,7 @@ def reconstruct(dataset, config_idx):
     # IterativeImputer replicates MICE algorithm when used for multiple imputations
     # by applying it repeatedly to the same dataset
     for i in tqdm(range(n_imputations)):
-        imputer = IterativeImputer(n_iter=1, sample_posterior=True, random_state=i)
+        imputer = IterativeImputer(n_iter=10, sample_posterior=True, random_state=i)
         reconstructed_dataset.append(imputer.fit_transform(incomplete_dataset))
 
     reconstructed_dataset_mean = np.mean(reconstructed_dataset, axis=0)

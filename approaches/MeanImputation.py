@@ -15,14 +15,30 @@ def reconstruct(dataset, config_idx):
     incomplete_dataset = pd.DataFrame(train_data.copy())
     reconstructed_dataset = pd.DataFrame(np.zeros((datasetLen, dim)))
 
-    for i in tqdm(range(datasetLen)):
-        frame = incomplete_dataset.loc[i, :]
+    for i in tqdm(range(dim)):
+        frame = incomplete_dataset.loc[:, i]
         mean = frame.mean()
-        ms = mask.loc[i, :]
-        frame.values[ms.values == 0] = mean
-        reconstructed_dataset.loc[i, :] = frame.values
+        ms = mask.loc[:, i]
+        frame.values[ms.index[ms == 0]] = mean
+        reconstructed_dataset.loc[:, i] = frame.values
 
     return reconstructed_dataset
+
+# def reconstruct_tabular(dataset, mask):
+#     print('Reconstructing using Most Frequent...')
+#     (datasetLen, dim) = np.shape(dataset)
+#
+#     incomplete_dataset = pd.DataFrame(dataset.copy())
+#     reconstructed_dataset = pd.DataFrame(np.zeros((datasetLen, dim)))
+#
+#     for i in tqdm(range(dim)):
+#         frame = incomplete_dataset.loc[:, i]
+#         mean = frame.mean()
+#         ms = mask.loc[:, i]
+#         frame.values[ms.index[ms == 0]] = mean
+#         reconstructed_dataset.loc[:, i] = frame.values
+#
+#     return reconstructed_dataset
 
 ## DEBUG TOOLS ##
 # import matplotlib.pyplot as plt

@@ -1,0 +1,13 @@
+{
+    "Dataset": ["credit"],
+    "MissingnessMechanism": ["MCAR", "MCAR", "MCAR", "MCAR",
+                             "MAR", "MAR", "MAR", "MAR"],
+    "MissingRate": [0.1, 0.3, 0.5, 0.7, 0.1, 0.3, 0.5, 0.7],
+    "Approaches": [ "/home/cazevedo/deeplearning/VAEGAN/approaches/GAINCredit.py"
+                  ],
+    "ApproachesMode": ["train"],
+    "BaselineMethods": ["MeanImputation", "MostFrequent", "MICE", "MissForest"],
+    "DownstreamTask": "/performance_eval/dnn_classifier.py",
+    "DownstreamMetrics": ["Accuracy"],
+    "ImputationMetrics": ["NRMSE", "AccuracyError"]
+}

@@ -19,7 +19,9 @@ import os
 from tqdm import tqdm
 import pandas as pd
 
-filename = 'model.ckpt'
+filename = 'credit_model.ckpt'
+# Loss Hyperparameters (0.1, 0.5, 1, 2, 10)
+alpha = 20
 
 # Mask Vector and Hint Vector Generation
 def sample_M(m, n, p):
@@ -61,60 +63,56 @@ def xavier_init(size):
 #         return fig
 
 def train(dataset, mask):
-    print('Training GAIN...')
+    print('Training GAINCredit...')
 
-    with tf.device('/gpu:2'):
+    tf.reset_default_graph()
 
-        tf.reset_default_graph()
+    # %% System Parameters
+    # 1. Mini batch size
+    mb_size = 64
+    # 3. Hint rate
+    p_hint = 0.9
+    # 6. No
+    (datasetLen, Dim) = np.shape(dataset)
+    # 7. Number of epochs
+    epochs = 1
 
-        # %% System Parameters
-        # 1. Mini batch size
-        mb_size = 128
-        # 3. Hint rate
-        p_hint = 0.9
-        # 4. Loss Hyperparameters
-        alpha = 10
-        # 6. No
-        (datasetLen, Dim) = np.shape(dataset)
-        # 7. Number of epochs
-        epochs = 1
+    trainX = dataset.copy()
+    trainM = mask.copy()
 
-        trainX = dataset.copy()
-        trainM = mask.copy()
+    # %% 1. Input Placeholders
+    # 1.1. Data Vector
+    X = tf.placeholder(tf.float32, shape=[None, Dim])
+    # 1.2. Mask Vector
+    M = tf.placeholder(tf.float32, shape=[None, Dim])
+    # 1.3. Hint vector
+    H = tf.placeholder(tf.float32, shape=[None, Dim])
+    # 1.4. Random Noise Vector
+    Z = tf.placeholder(tf.float32, shape=[None, Dim])
 
-        # %% 1. Input Placeholders
-        # 1.1. Data Vector
-        X = tf.placeholder(tf.float32, shape=[None, Dim])
-        # 1.2. Mask Vector
-        M = tf.placeholder(tf.float32, shape=[None, Dim])
-        # 1.3. Hint vector
-        H = tf.placeholder(tf.float32, shape=[None, Dim])
-        # 1.4. Random Noise Vector
-        Z = tf.placeholder(tf.float32, shape=[None, Dim])
+    # %% 2. Discriminator
+    D_W1 = tf.Variable(xavier_init([Dim * 2, Dim]))  # Data + Hint as inputs
+    D_b1 = tf.Variable(tf.zeros(shape=[Dim]))
 
-        # %% 2. Discriminator
-        D_W1 = tf.Variable(xavier_init([Dim * 2, 256]))  # Data + Hint as inputs
-        D_b1 = tf.Variable(tf.zeros(shape=[256]))
+    D_W2 = tf.Variable(xavier_init([Dim, int(Dim/2)]))
+    D_b2 = tf.Variable(tf.zeros(shape=[int(Dim/2)]))
 
-        D_W2 = tf.Variable(xavier_init([256, 128]))
-        D_b2 = tf.Variable(tf.zeros(shape=[128]))
+    D_W3 = tf.Variable(xavier_init([int(Dim/2), Dim]))
+    D_b3 = tf.Variable(tf.zeros(shape=[Dim]))  # Output is multi-variate
 
-        D_W3 = tf.Variable(xavier_init([128, Dim]))
-        D_b3 = tf.Variable(tf.zeros(shape=[Dim]))  # Output is multi-variate
+    theta_D = [D_W1, D_W2, D_W3, D_b1, D_b2, D_b3]
 
-        theta_D = [D_W1, D_W2, D_W3, D_b1, D_b2, D_b3]
+    # %% 3. Generator
+    G_W1 = tf.Variable(xavier_init([Dim * 2, Dim]))  # Data + Mask as inputs (Random Noises are in Missing Components)
+    G_b1 = tf.Variable(tf.zeros(shape=[Dim]))
 
-        # %% 3. Generator
-        G_W1 = tf.Variable(xavier_init([Dim * 2, 256]))  # Data + Mask as inputs (Random Noises are in Missing Components)
-        G_b1 = tf.Variable(tf.zeros(shape=[256]))
+    G_W2 = tf.Variable(xavier_init([Dim, int(Dim/2)]))
+    G_b2 = tf.Variable(tf.zeros(shape=[int(Dim/2)]))
 
-        G_W2 = tf.Variable(xavier_init([256, 128]))
-        G_b2 = tf.Variable(tf.zeros(shape=[128]))
+    G_W3 = tf.Variable(xavier_init([int(Dim/2), Dim]))
+    G_b3 = tf.Variable(tf.zeros(shape=[Dim]))
 
-        G_W3 = tf.Variable(xavier_init([128, Dim]))
-        G_b3 = tf.Variable(tf.zeros(shape=[Dim]))
-
-        theta_G = [G_W1, G_W2, G_W3, G_b1, G_b2, G_b3]
+    theta_G = [G_W1, G_W2, G_W3, G_b1, G_b2, G_b3]
 
     # %% GAIN Function
     # %% 1. Generator
@@ -171,6 +169,8 @@ def train(dataset, mask):
         for it in tqdm(range(datasetLen)):
             # %% Inputs
             mb_idx = sample_idx(datasetLen, mb_size)
+            # print(mb_idx)
+            # print(trainX)
             X_mb = trainX.loc[mb_idx, :].values
             # Z_mb = sample_Z(mb_size, Dim)
             M_mb = trainM.loc[mb_idx, :].values
@@ -204,7 +204,7 @@ def train(dataset, mask):
     sess.close()
 
 def reconstruct(dataset, mask):
-    print('Reconstructing using GAIN...')
+    print('Reconstructing using GAINCredit...')
 
     tf.reset_default_graph()
 
@@ -215,8 +215,6 @@ def reconstruct(dataset, mask):
 
     testX = dataset.copy()
     testM = mask.copy()
-
-    alpha = 10
 
     # %% 1. Input Placeholders
     # 1.1. Data Vector
@@ -229,25 +227,25 @@ def reconstruct(dataset, mask):
     Z = tf.placeholder(tf.float32, shape=[None, Dim])
 
     # %% 2. Discriminator
-    D_W1 = tf.Variable(xavier_init([Dim * 2, 256]))  # Data + Hint as inputs
-    D_b1 = tf.Variable(tf.zeros(shape=[256]))
+    D_W1 = tf.Variable(xavier_init([Dim * 2, Dim]))  # Data + Hint as inputs
+    D_b1 = tf.Variable(tf.zeros(shape=[Dim]))
 
-    D_W2 = tf.Variable(xavier_init([256, 128]))
-    D_b2 = tf.Variable(tf.zeros(shape=[128]))
+    D_W2 = tf.Variable(xavier_init([Dim, int(Dim/2)]))
+    D_b2 = tf.Variable(tf.zeros(shape=[int(Dim/2)]))
 
-    D_W3 = tf.Variable(xavier_init([128, Dim]))
+    D_W3 = tf.Variable(xavier_init([int(Dim/2), Dim]))
     D_b3 = tf.Variable(tf.zeros(shape=[Dim]))  # Output is multi-variate
 
     theta_D = [D_W1, D_W2, D_W3, D_b1, D_b2, D_b3]
 
     # %% 3. Generator
-    G_W1 = tf.Variable(xavier_init([Dim * 2, 256]))  # Data + Mask as inputs (Random Noises are in Missing Components)
-    G_b1 = tf.Variable(tf.zeros(shape=[256]))
+    G_W1 = tf.Variable(xavier_init([Dim * 2, Dim]))  # Data + Mask as inputs (Random Noises are in Missing Components)
+    G_b1 = tf.Variable(tf.zeros(shape=[Dim]))
 
-    G_W2 = tf.Variable(xavier_init([256, 128]))
-    G_b2 = tf.Variable(tf.zeros(shape=[128]))
+    G_W2 = tf.Variable(xavier_init([Dim, int(Dim/2)]))
+    G_b2 = tf.Variable(tf.zeros(shape=[int(Dim/2)]))
 
-    G_W3 = tf.Variable(xavier_init([128, Dim]))
+    G_W3 = tf.Variable(xavier_init([int(Dim/2), Dim]))
     G_b3 = tf.Variable(tf.zeros(shape=[Dim]))
 
     theta_G = [G_W1, G_W2, G_W3, G_b1, G_b2, G_b3]

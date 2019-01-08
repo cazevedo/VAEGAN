@@ -15,12 +15,13 @@ def reconstruct(dataset, config_idx):
     incomplete_dataset = pd.DataFrame(train_data.copy())
     reconstructed_dataset = pd.DataFrame(np.zeros((datasetLen, dim)))
 
-    for i in tqdm(range(datasetLen)):
-        frame = incomplete_dataset.loc[i, :]
-        most_frequent = frame.mode()[0] 
-        ms = mask.loc[i, :]
-        frame.values[ms.values == 0] = most_frequent
-        reconstructed_dataset.loc[i, :] = frame.values
+    for i in tqdm(range(dim)):
+        frame = incomplete_dataset.loc[:, i]
+        most_frequent = frame.mode()[0]
+        ms = mask.loc[:, i]
+
+        frame.values[ms.index[ms == 0]] = most_frequent
+        reconstructed_dataset.loc[:, i] = frame.values
 
     return reconstructed_dataset
 
