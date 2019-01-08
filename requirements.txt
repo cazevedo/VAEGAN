@@ -6,3 +6,4 @@ sklearn
 fancyimpute
 pandas
 xlrd
+tqdm
