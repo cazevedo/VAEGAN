@@ -110,7 +110,6 @@ class ReconstructDataset(object):
             custom_dataset = get_datasets.dataset_folder(dataset=dataset, miss_strats=missing_mechanisms, miss_rates=missing_rates, n=len(missing_mechanisms))
 
             for config_idx in range(len(missing_mechanisms)):
-                print(config_idx)
                 mnist_orig_ds = custom_dataset.orig_ds  # get the original dataset with its partitions
                 mnist_miss_masks = custom_dataset.miss_masks  # get the miss masks for the n folds
                 mnist_corr_ds = custom_dataset.ds_corruptor()  # get the corrupted datasets from the mask matrixes
@@ -151,18 +150,18 @@ class ReconstructDataset(object):
                     reconstructed_dataset.to_pickle(file_name)
                     r_datasets_paths.append(file_name)
 
-                    # ## Print for DEBUG ##
-                    # for i in tqdm(range(len(reconstructed_dataset))):
-                    #     if i % 10000 == 0:
-                    #         inc = incomplete_dataset.loc[i].values
-                    #         rec = reconstructed_dataset.loc[i].values
-                    #         orig = original_dataset.loc[i].values
-                    #
-                    #         samples = np.vstack([inc, rec, orig])
-                    #         fig = plot(samples)
-                    #         plt.savefig('Multiple_Impute_out1/app{}.png'.format(str(i).zfill(3)), bbox_inches='tight')
-                    #         plt.close(fig)
-                    # ## ----- ##
+                    ## Print for DEBUG ##
+                    for i in tqdm(range(len(reconstructed_dataset))):
+                        if i % 10000 == 0:
+                            inc = incomplete_dataset.loc[i].values
+                            rec = reconstructed_dataset.loc[i].values
+                            orig = original_dataset.loc[i].values
+
+                            samples = np.vstack([inc, rec, orig])
+                            fig = plot(samples)
+                            plt.savefig('Multiple_Impute_out1/app{}.png'.format(str(i).zfill(3)), bbox_inches='tight')
+                            plt.close(fig)
+                    ## ----- ##
 
                 #Reconstruct the dataset for each baseline method
                 baseline = self.config.get("BaselineMethods")
@@ -190,18 +189,18 @@ class ReconstructDataset(object):
                     reconstructed_dataset.to_pickle(file_name)
                     r_datasets_paths.append(file_name)
 
-                    # ## Print for DEBUG ##
-                    # for i in tqdm(range(len(reconstructed_dataset))):
-                    #     if i % 10000 == 0:
-                    #         inc = incomplete_dataset.loc[i].values
-                    #         rec = reconstructed_dataset.loc[i].values
-                    #         orig = original_dataset.loc[i].values
-                    #
-                    #         samples = np.vstack([inc, rec, orig])
-                    #         fig = plot(samples)
-                    #         plt.savefig('Multiple_Impute_out1/{}{}.png'.format(str(i).zfill(3), method), bbox_inches='tight')
-                    #         plt.close(fig)
-                    # ## ----- ##
+                    ## Print for DEBUG ##
+                    for i in tqdm(range(len(reconstructed_dataset))):
+                        if i % 10000 == 0:
+                            inc = incomplete_dataset.loc[i].values
+                            rec = reconstructed_dataset.loc[i].values
+                            orig = original_dataset.loc[i].values
+
+                            samples = np.vstack([inc, rec, orig])
+                            fig = plot(samples)
+                            plt.savefig('Multiple_Impute_out1/{}{}.png'.format(str(i).zfill(3), method), bbox_inches='tight')
+                            plt.close(fig)
+                    ## ----- ##
 
         return r_datasets_paths
 

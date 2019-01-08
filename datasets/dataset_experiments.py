@@ -17,14 +17,18 @@ start_time = time.time()
 np_ds=np.array([np.array(i).flatten() for i in ds_mnist.train_data[:]])
 print(time.time() - start_time)
 
+print(np.shape(np_ds))
+
 ## ~ 0,7 seconds in my machine
 
 ##
 #Pandas dataframe, the wrong way
 
-start_time = time.time()
-pd_ds=pd.DataFrame((np.asarray(i).flatten() for i in ds_mnist.train_data[:]),dtype=np.uint8)
-print(time.time() - start_time) ## ~ 250 seconds in my machine!
+# start_time = time.time()
+# pd_ds=pd.DataFrame((np.asarray(i).flatten() for i in ds_mnist.train_data[:]),dtype=np.uint8)
+# print(time.time() - start_time) ## ~ 250 seconds in my machine!
+
+# print(np.shape(pd_ds))
 
 ##
 #Pandas dataframe, the right way
@@ -32,6 +36,17 @@ print(time.time() - start_time) ## ~ 250 seconds in my machine!
 start_time = time.time()
 pd_ds=pd.DataFrame(np.array([np.asarray(i).flatten() for i in ds_mnist.train_data[:]]),dtype=np.uint8)
 print(time.time() - start_time) ## ~ 0,7 seconds in my machine
+
+print(np.shape(pd_ds))
+
+
+print(np.shape(ds_mnist.train_data))
+
+start_time = time.time()
+pd_ds=pd.DataFrame(ds_mnist.train_data)
+print(time.time() - start_time) ## ~ 0,7 seconds in my machine
+
+print(np.shape(pd_ds))
 
 
 ### CONCLUSIONS
