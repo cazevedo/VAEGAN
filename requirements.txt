@@ -4,6 +4,7 @@ matplotlib
 numpy
 sklearn
 fancyimpute
+missingpy
 pandas
 xlrd
 tqdm
