@@ -225,15 +225,24 @@ class dataset_folder():
             train_ratio=0.9 #Default ratio of 0.9 for this dataset
             
         #Split dataset - create indices
-        test_index=random.sample(range(len(raw)),int(len(raw)*(1-train_ratio)))
-        test_index.sort()
-        train_index=list(set(range(len(raw))).difference(test_index))
+        # test_index=random.sample(range(len(raw)),int(len(raw)*(1-train_ratio)))
+        # test_index.sort()
+        # train_index=list(set(range(len(raw))).difference(test_index))
+
+        # Force not random
+        test_sep = int(len(raw)*train_ratio)
+        test_index = list(range(0, test_sep))
+        train_index = list(range(test_sep, len(raw)))
+
         #splits
         train_X=raw.loc[train_index, raw.columns != variables['target']]
         test_X=raw.loc[test_index, raw.columns != variables['target']]
         train_target=raw.loc[train_index, raw.columns==variables['target']]
         test_target=raw.loc[test_index, raw.columns==variables['target']]
-        
+
+        train_X = train_X[ ['LIMIT_BAL','PAY_AMT1','PAY_AMT2','PAY_AMT3', 'PAY_AMT4','PAY_AMT5','PAY_AMT6', 'BILL_AMT1','BILL_AMT2','BILL_AMT3','BILL_AMT4','BILL_AMT5','BILL_AMT6'] ]
+        test_X = test_X[ ['LIMIT_BAL','PAY_AMT1','PAY_AMT2','PAY_AMT3', 'PAY_AMT4','PAY_AMT5','PAY_AMT6', 'BILL_AMT1','BILL_AMT2','BILL_AMT3','BILL_AMT4','BILL_AMT5','BILL_AMT6'] ]
+
         #get dtypes series
         dtypes=raw.dtypes
         for (key, value) in variables.items():
