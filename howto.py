@@ -18,9 +18,9 @@ dataset=dataset_folder(
 )
 
 # Fix the indices from splitting train/test
-dataset.orig_ds['train_X'].reset_index(inplace=True)
+dataset.orig_ds['train_X'].reset_index(inplace=True, drop=True)
 for i in range(N):
-	dataset.miss_masks[i]['train_X'].reset_index(inplace=True)
+	dataset.miss_masks[i]['train_X'].reset_index(inplace=True, drop=True)
 
 # Select a config index
 config_idx = 0 # up to n-1 from above
