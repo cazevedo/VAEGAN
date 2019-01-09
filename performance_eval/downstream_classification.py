@@ -50,10 +50,10 @@ def train(args, model, device, train_loader, optimizer, epoch):
         loss = F.nll_loss(output, target)
         loss.backward()
         optimizer.step()
-        if batch_idx % args.log_interval == 0:
-            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                epoch, batch_idx * len(data), len(train_loader.dataset),
-                100. * batch_idx / len(train_loader), loss.item()))
+        # if batch_idx % args.log_interval == 0:
+        #     print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+        #         epoch, batch_idx * len(data), len(train_loader.dataset),
+        #         100. * batch_idx / len(train_loader), loss.item()))
 
 def test(args, model, device, test_loader):
     model.eval()
@@ -69,11 +69,15 @@ def test(args, model, device, test_loader):
 
     test_loss /= len(test_loader.dataset)
 
+    acc = 1. * correct / len(test_loader.dataset)
     print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
         test_loss, correct, len(test_loader.dataset),
-        100. * correct / len(test_loader.dataset)))
+        100.*acc))
 
-def main():
+    return acc
+
+
+def main(args_split=None):
     # Training settings
     parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
     parser.add_argument('--batch-size', type=int, default=64, metavar='N',
@@ -98,7 +102,11 @@ def main():
 
     parser.add_argument('train_filename')
 
-    args = parser.parse_args()
+    if args_split:
+        args = parser.parse_args(args_split)
+    else:
+        args = parser.parse_args()
+
     use_cuda = not args.no_cuda and torch.cuda.is_available()
 
     torch.manual_seed(args.seed)
@@ -150,10 +158,12 @@ def main():
 
     for epoch in range(1, args.epochs + 1):
         train(args, model, device, train_loader, optimizer, epoch)
-        test(args, model, device, test_loader)
+        accuracy = test(args, model, device, test_loader)
 
     if (args.save_model):
         torch.save(model.state_dict(),"mnist_cnn.pt")
-        
+
+    return accuracy
+
 if __name__ == '__main__':
     main()
