@@ -1,6 +1,6 @@
 # Config
 approach = "mean"
-dataset_name = "MNIST"
+dataset_name = "credit"
 miss_strats = ['MCAR'] # ['MAR','MAR','MCAR']
 mechanism = miss_strats[0]
 missing_ratio = 0.5
@@ -28,6 +28,16 @@ config_idx = 0 # up to n-1 from above
 # dataset.orig_ds['train_X'] = dataset.orig_ds['train_X'].loc[:test_len, :]
 # dataset.miss_masks[config_idx]['train_X'] = dataset.miss_masks[config_idx]['train_X'].loc[:test_len, :]
 
+# Save the original dataset and reconstructed
+import pickle
+
+fn_org = "{dataset}.pkl".format(
+	dataset=dataset_name,
+)
+with open("results/"+fn_org, "wb") as f:
+	pickle.dump((dataset.orig_ds['train_X'], dataset.orig_ds['test_X'], dataset_name), f)
+
+
 if approach == "mean":
 	from approaches import MeanImputation
 	reconstructed = MeanImputation.reconstruct(dataset, config_idx)
@@ -39,15 +49,6 @@ elif approach == "MICE":
 	reconstructed = MICE.reconstruct(dataset, config_idx)
 else:
 	raise NotImplementedError(approach)
-
-# Save the original dataset and reconstructed
-import pickle
-
-fn_org = "{dataset}.pkl".format(
-	dataset=dataset_name,
-)
-with open("results/"+fn_org, "wb") as f:
-	pickle.dump((dataset.orig_ds['train_X'], dataset.orig_ds['test_X'], dataset_name), f)
 
 fn_fmt = "{dataset}_{approach}_{missing_mechanism}_{missing_ratio}_{n}.pkl"
 fn = fn_fmt.format(
