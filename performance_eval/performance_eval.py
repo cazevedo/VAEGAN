@@ -30,7 +30,7 @@ def nrmse(original_dataset, reconstructed_dataset, missing_ratio):
     x_min = x.min()
 
     # TODO size of missing mask??  
-    print(r.shape)
+    # print(r.shape)
     n = r.shape[0]*r.shape[1]*missing_ratio # number of missing/imputed observations
    
     nrmse = np.sqrt(np.sum(np.square(x-r))/n)/(x_max-x_min)
@@ -44,7 +44,7 @@ def evaluate_approach(original_dataset, reconstructed_datasets):
     output:
         - mean of nrmse
         - variance of nrmse
-    
+
     """
     
     orig = get_original(original_dataset)
