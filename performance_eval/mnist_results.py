@@ -1,6 +1,10 @@
 import performance_eval as pe
 import os
 import csv
+import seaborn as sns
+import matplotlib.pyplot as plt
+import matplotlib.style as style
+import pandas as pd
 
 def generate_csv():
     results_dir = '/mnt/nariz/cazevedo/'
@@ -75,6 +79,49 @@ def generate_csv():
         writer.writerows([writer_notepad])
 
 def plot_from_csv():
+    myFile = open('/home/cazevedo/deeplearning/VAEGAN/results/results_mnist_rmse.csv', 'r')
+    data = pd.read_csv(myFile, sep=',')
+
+    data_mar = data.loc[data['Mechanism']=='MAR']
+    data_mcar = data.loc[data['Mechanism']=='MCAR']
+
+    sns.set()
+    # style.use('seaborn-whitegrid')
+
+    #### ------------ MAR PLOT ------------------ ####
+    plt.figure()
+    sns_plot_mar = sns.lineplot(x="MissingRatio", y="Mean", hue="Approach", style="Approach",
+                                markers = True, dashes = True, data = data_mar)
+
+    # sns_plot_mar.errorbar(yerr="Std", data = data_mar)  # fmt=None to plot bars only
+
+    sns_plot_mar.legend(markerscale=0.75)
+    plt.setp(sns_plot_mar.get_legend().get_texts(), fontsize='8')  # for legend text
+    plt.setp(sns_plot_mar.get_legend().get_title(), fontsize='7')  # for legend title
+
+    plt.title('Reconstruction of dataset \n corrupted with MAR missing mechanism')
+    plt.xlabel('Missing Ratio (%)')
+    plt.ylabel('RMSE Mean')
+
+    fig = sns_plot_mar.get_figure()
+    fig.savefig("/home/cazevedo/deeplearning/VAEGAN/results/output_mar.pdf")
+
+    #### ------------ MCAR PLOT ------------------ ####
+    plt.figure()
+    sns_plot_mcar = sns.lineplot(x="MissingRatio", y="Mean", hue="Approach", style="Approach",
+                                 markers = True, dashes = True, data = data_mcar)
+
+    plt.title('Reconstruction of dataset \n corrupted with MCAR missing mechanism')
+    plt.xlabel('Missing Ratio (%)')
+    plt.ylabel('RMSE Mean')
+
+    sns_plot_mcar.legend(markerscale=0.75)
+    plt.setp(sns_plot_mcar.get_legend().get_texts(), fontsize='8')  # for legend text
+    plt.setp(sns_plot_mcar.get_legend().get_title(), fontsize='7')  # for legend title
+
+    fig = sns_plot_mcar.get_figure()
+    fig.savefig("/home/cazevedo/deeplearning/VAEGAN/results/output_mcar.pdf")
 
 if __name__ == "__main__":
     # generate_csv()
+    plot_from_csv()
