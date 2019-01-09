@@ -1,4 +1,4 @@
-approach,mechanism,missingratio,n,accuracy
+Approach,Mechanism,Missing Ratio,n,Accuracy
 GAIN,MAR,0.1,0,0.9886
 GAIN,MAR,0.1,1,0.9881
 GAIN,MAR,0.1,2,0.9886
