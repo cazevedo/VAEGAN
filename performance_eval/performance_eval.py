@@ -14,6 +14,8 @@ def get_reconstructed(filename):
 
     return rec, missing_ratio    
 
+def test():
+    print('HEY')
 
 def nrmse(original_dataset, reconstructed_dataset, missing_ratio):
     """

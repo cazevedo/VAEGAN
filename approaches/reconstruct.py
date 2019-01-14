@@ -89,7 +89,7 @@ class ReconstructDataset(object):
                         reconstructed_dataset = appch.reconstruct(incomplete_dataset, mask)
 
                     # save the reconstructed dataset in datasets folder
-                    fn_fmt = "/{dataset}_{approach}_{missing_mechanism}_{missing_ratio}_{run_index}.pkl"
+                    fn_fmt = "{dataset}_{approach}_{missing_mechanism}_{missing_ratio}_{run_index}.pkl"
                     # get the approach name
                     (filedir, app_name) = os.path.split(app_path)
                     app_name = app_name.split('.')[0]
@@ -129,7 +129,7 @@ class ReconstructDataset(object):
                     reconstructed_dataset = mthd.reconstruct(incomplete_dataset, mask)
 
                     # save the reconstructed dataset in datasets folder
-                    fn_fmt = "/{dataset}_{approach}_{missing_mechanism}_{missing_ratio}_{run_index}.pkl"
+                    fn_fmt = "{dataset}_{approach}_{missing_mechanism}_{missing_ratio}_{run_index}.pkl"
                     file_name = fn_fmt.format(
                         dataset=dataset,
                         approach=method,

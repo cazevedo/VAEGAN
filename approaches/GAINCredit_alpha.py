@@ -75,7 +75,7 @@ def train(dataset, mask, alpha):
     # 6. No
     (datasetLen, Dim) = np.shape(dataset)
     # 7. Number of epochs
-    epochs = 1
+    epochs = 3
 
     trainX = dataset.copy()
     trainM = mask.copy()

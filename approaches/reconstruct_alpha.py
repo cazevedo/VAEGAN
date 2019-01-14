@@ -9,6 +9,8 @@ sys.path.insert(0,parentdir)
 sys.path.append('.')
 import get_datasets
 import GAINCredit_alpha as gain
+import performance_eval_alpha as pe
+import csv
 
 ### --------------------- DEBUG TOOLS -----------------------###
 import matplotlib.pyplot as plt
@@ -37,8 +39,7 @@ class ReconstructDataset(object):
         script_dir = os.path.abspath(__file__)
         (self.filedir, tail) = os.path.split(script_dir)
         (projectdir, tail) = os.path.split(self.filedir)
-        # filename = 'config.json'
-        filename = 'config2.json'
+        filename = 'config_alphas.json'
         abs_file_path = os.path.join(projectdir, filename)
 
         with open(abs_file_path) as f:
@@ -49,7 +50,8 @@ class ReconstructDataset(object):
         (projectdir, tail) = os.path.split(filedir)
         # dir_name = 'datasets'
         # self.datasets_dir_path = os.path.join(projectdir, dir_name)
-        self.datasets_dir_path = '/mnt/nariz/cazevedo/'
+        self.datasets_dir_path = '/mnt/nariz/cazevedo/alpha/'
+        self.init_results = False
 
     def get_dataset(self, dataset, missing_mechanisms, missing_rates):
         print('Retrieving dataset...   ')
@@ -71,7 +73,7 @@ class ReconstructDataset(object):
 
     def save_dataset(self, reconstructed_dataset, dataset_name, approach_name, missing_mechanism, missing_rate, run_index, alpha):
         # save the reconstructed dataset in datasets folder
-        fn_fmt = "/{dataset}_{approach}_{missing_mechanism}_{missing_ratio}_{alpha}_{run_index}.pkl"
+        fn_fmt = "{dataset}_{approach}_{missing_mechanism}_{missing_ratio}_{alpha}_{run_index}.pkl"
         file_name = fn_fmt.format(
             dataset=dataset_name,
             approach=approach_name,
@@ -85,7 +87,17 @@ class ReconstructDataset(object):
         print("Saving reconstructed dataset in path : ", path_file_name)
         reconstructed_dataset.to_pickle(path_file_name)
 
-    def run(self, num_runs):
+    def save_results(self, results_dir, approach, mechanism, missing_ratio, alpha, nrmse):
+        myFile = open(results_dir+'alpha_results_mnist_rmse.csv', 'a')
+        writer = csv.writer(myFile)
+
+        if not self.init_results:
+            writer.writerows([['Approach', 'Mechanism', 'MissingRatio', 'Alpha', 'NRMSE']])
+            self.init_results = True
+
+        writer.writerows([[approach, mechanism, missing_ratio, alpha, nrmse]])
+
+    def run(self, num_runs, results_dir):
         datasets = self.config.get("Dataset")
         missing_mechanisms = self.config.get("MissingnessMechanism")
         missing_rates = self.config.get("MissingRate")
@@ -93,7 +105,7 @@ class ReconstructDataset(object):
         approach_name = 'GAINCredit'
         missing_mechanism = 'MCAR'
 
-        alphas = [0.1, 0.5, 1, 2, 10]
+        alphas = [0.5]
 
         for missing_rate in missing_rates:
             incomplete_dataset, mask, original_dataset = self.get_dataset(dataset_name, missing_mechanism,
@@ -109,10 +121,18 @@ class ReconstructDataset(object):
                     gain.train(incomplete_dataset, mask, alpha)
                     reconstructed_dataset = gain.reconstruct(incomplete_dataset, mask, alpha)
 
-                    self. save_dataset(reconstructed_dataset, dataset_name, approach_name, missing_mechanism, missing_rate, run_index, alpha)
+                    # self.save_dataset(reconstructed_dataset, dataset_name, approach_name, missing_mechanism, missing_rate, run_index, alpha)
+
+                    nrmse = pe.nrmse(original_dataset, reconstructed_dataset, missing_rate)
+
+                    self.save_results(results_dir, approach_name, missing_mechanism, missing_rate, alpha, nrmse)
+                    print("-------------------------------------")
+                    print("NRMSE : ", nrmse)
+
 
 
 if __name__ == "__main__":
     reconstruct_obj = ReconstructDataset()
+    results_dir = '/home/cazevedo/deeplearning/VAEGAN/results/'
     n_runs = 5
-    reconstruct_obj.run(n_runs)
+    reconstruct_obj.run(n_runs, results_dir)
