@@ -1,0 +1,9 @@
+{
+    "Dataset": ["credit"],
+    "MissingnessMechanism": ["MCAR", "MCAR", "MCAR", "MCAR"],
+    "MissingRate": [0.1, 0.3, 0.5, 0.7],
+    "Approaches": [ "/home/cazevedo/deeplearning/VAEGAN/approaches/GAINCredit.py"
+                  ],
+    "ApproachesMode": ["train"],
+    "BaselineMethods": []
+}
