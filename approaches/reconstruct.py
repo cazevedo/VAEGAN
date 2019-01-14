@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use('Agg')
 import json
 import importlib.util
 import numpy as np
@@ -36,8 +38,8 @@ class ReconstructDataset(object):
         script_dir = os.path.abspath(__file__)
         (self.filedir, tail) = os.path.split(script_dir)
         (projectdir, tail) = os.path.split(self.filedir)
-        # filename = 'config.json'
-        filename = 'config2.json'
+        filename = 'config.json'
+        # filename = 'config2.json'
         abs_file_path = os.path.join(projectdir, filename)
 
         with open(abs_file_path) as f:
@@ -48,7 +50,7 @@ class ReconstructDataset(object):
         (projectdir, tail) = os.path.split(filedir)
         # dir_name = 'datasets'
         # self.datasets_dir_path = os.path.join(projectdir, dir_name)
-        self.datasets_dir_path = '/mnt/nariz/cazevedo/'
+        self.datasets_dir_path = '/home/glawless/ws/VAEGAN/datasets'
 
     def run(self, run_index=0):
         datasets = self.config.get("Dataset")
@@ -105,18 +107,18 @@ class ReconstructDataset(object):
                     reconstructed_dataset.to_pickle(path_file_name)
                     r_datasets_paths.append(path_file_name)
 
-                    # # Print for DEBUG ##
-                    # for i in tqdm(range(len(reconstructed_dataset))):
-                    #     if i % 40000 == 0:
-                    #         inc = incomplete_dataset.loc[i].values
-                    #         rec = reconstructed_dataset.loc[i].values
-                    #         orig = original_dataset.loc[i].values
-                    #
-                    #         samples = np.vstack([inc, rec, orig])
-                    #         fig = plot(samples)
-                    #         plt.savefig('Multiple_Impute_out1/{}_sample_{}.png'.format(file_name.split('.pkl')[0],str(i)), bbox_inches='tight')
-                    #         plt.close(fig)
-                    # ## ----- ##
+                    # Print for DEBUG ##
+                    for i in tqdm(range(len(reconstructed_dataset))):
+                        if i % 40000 == 0:
+                            inc = incomplete_dataset.loc[i].values
+                            rec = reconstructed_dataset.loc[i].values
+                            orig = original_dataset.loc[i].values
+                    
+                            samples = np.vstack([inc, rec, orig])
+                            fig = plot(samples)
+                            plt.savefig('Multiple_Impute_out1/{}_sample_{}.png'.format(file_name.split('.pkl')[0],str(i)), bbox_inches='tight')
+                            plt.close(fig)
+                    ## ----- ##
 
                 #Reconstruct the dataset for each baseline method
                 baseline = self.config.get("BaselineMethods")
@@ -142,24 +144,24 @@ class ReconstructDataset(object):
                     reconstructed_dataset.to_pickle(path_file_name)
                     r_datasets_paths.append(path_file_name)
 
-                    # ## Print for DEBUG ##
-                    # for i in tqdm(range(len(reconstructed_dataset))):
-                    #     if i % 40000 == 0:
-                    #         inc = incomplete_dataset.loc[i].values
-                    #         rec = reconstructed_dataset.loc[i].values
-                    #         orig = original_dataset.loc[i].values
-                    #
-                    #         samples = np.vstack([inc, rec, orig])
-                    #         fig = plot(samples)
-                    #         plt.savefig('Multiple_Impute_out1/{}_sample_{}.png'.format(file_name.split('.pkl')[0],str(i)), bbox_inches='tight')
-                    #         plt.close(fig)
-                    # ## ----- ##
+                    ## Print for DEBUG ##
+                    for i in tqdm(range(len(reconstructed_dataset))):
+                        if i % 40000 == 0:
+                            inc = incomplete_dataset.loc[i].values
+                            rec = reconstructed_dataset.loc[i].values
+                            orig = original_dataset.loc[i].values
+                    
+                            samples = np.vstack([inc, rec, orig])
+                            fig = plot(samples)
+                            plt.savefig('Multiple_Impute_out1/{}_sample_{}.png'.format(file_name.split('.pkl')[0],str(i)), bbox_inches='tight')
+                            plt.close(fig)
+                    ## ----- ##
 
         return r_datasets_paths
 
 if __name__ == "__main__":
     reconstruct_obj = ReconstructDataset()
-    n_runs = 20
+    n_runs = 1
 
     full_dataset_paths = []
     for run_number in range(n_runs):

@@ -1,12 +1,11 @@
 {
     "Dataset": ["MNIST"],
-    "MissingnessMechanism": ["MCAR", "MCAR", "MCAR", "MCAR",
-                             "MAR", "MAR", "MAR", "MAR"],
+    "MissingnessMechanism": ["MCAR", "MCAR", "MCAR", "MCAR", "MAR", "MAR", "MAR", "MAR"],
     "MissingRate": [0.1, 0.3, 0.5, 0.7, 0.1, 0.3, 0.5, 0.7],
-    "Approaches": [ "/home/cazevedo/deeplearning/VAEGAN/approaches/GAIN.py"
+    "Approaches": [ "/home/glawless/ws/VAEGAN/approaches/GAIN.py"
                   ],
     "ApproachesMode": ["train"],
-    "BaselineMethods": ["MostFrequent", "MeanImputation"],
+    "BaselineMethods": ["MICE", "MostFrequent", "MeanImputation"],
     "DownstreamTask": "/performance_eval/dnn_classifier.py",
     "DownstreamMetrics": ["Accuracy"],
     "ImputationMetrics": ["NRMSE", "AccuracyError"]

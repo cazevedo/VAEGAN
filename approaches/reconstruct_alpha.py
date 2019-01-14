@@ -50,8 +50,8 @@ class ReconstructDataset(object):
         (projectdir, tail) = os.path.split(filedir)
         # dir_name = 'datasets'
         # self.datasets_dir_path = os.path.join(projectdir, dir_name)
-        self.datasets_dir_path = '/mnt/nariz/cazevedo/alpha/'
         self.init_results = False
+        self.datasets_dir_path = '/home/glawless/ws/VAEGAN/datasets/'
 
     def get_dataset(self, dataset, missing_mechanisms, missing_rates):
         print('Retrieving dataset...   ')
@@ -133,6 +133,6 @@ class ReconstructDataset(object):
 
 if __name__ == "__main__":
     reconstruct_obj = ReconstructDataset()
-    results_dir = '/home/cazevedo/deeplearning/VAEGAN/results/'
+    results_dir = '/home/glawless/ws/deep-structured-learning/project/VAEGAN/results'
     n_runs = 5
     reconstruct_obj.run(n_runs, results_dir)
